@@ -1,6 +1,6 @@
 # Core Agent Instructions
 
-These are the foundational rules for how you interact with the user and approach tasks in **Slide Jam** (working title): a turn-based mobile puzzle where you slide rows and columns, blocks match on their own and fill target slots. The project is a set of HTML prototypes today, with a Unity (2D) port planned. The repository's operating manual is `AGENTS.md` (imported at the bottom); the project reference is `DESIGN.md`.
+These are the foundational rules for how you interact with the user and approach tasks in **Slide Jam** (working title): a turn-based mobile puzzle where you slide rows and columns, blocks match on their own and fill target slots. The project is a **Unity 2D** project (Unity 2022.3.62f3, mobile portrait). The rules were designed in a throwaway HTML prototype (three levels, three boosters, a fruit-garden skin) that is not in this repository. The repository's operating manual is `AGENTS.md` (imported at the bottom); the project reference is `DOCS/DESIGN.md`.
 
 ## 0. Who you're talking to
 
@@ -16,44 +16,45 @@ These are the foundational rules for how you interact with the user and approach
 **Example:**
 
 > "You asked me to 'make chains easier.' I need to clarify:
-> - Fewer layers on the chain (`LevelConfig`), or a wider unlock rule (e.g. breaking when a match is two cells away)? The second changes `DESIGN.md` §5.7 and invariant I7's wording.
+> - Fewer layers on the chain (`LevelConfig`), or a wider unlock rule (e.g. breaking when a match is two cells away)? The second changes `DESIGN.md` §5.6 and invariant I7's wording.
 > - Should this apply to Level 2 only, or to every level?
-> - Should I re-measure balance (§5.10) and put the new numbers in the doc?"
+> - Should I check that every level can still be won (I11) and say how?"
 
 ## 2. Plan Before Major Work
 
-* Before major work (a new mechanic, a change to the resolution order or the settle, a refactor across `logic` and `view`, the Unity port), write an execution plan and get it validated.
-* Skip planning for simple, low-risk changes (a typo, a colour, a toast text, a single-line fix).
+* Before major work (a new mechanic or booster, a change to the resolution order or the settle, a refactor across `engine` and `view`, a new scene or assembly layout), write an execution plan and get it validated.
+* Skip planning for simple, low-risk changes (a typo, a colour, a display string, a single-line fix).
 * If the user says no plan is needed, go straight to execution.
 
 **A good plan includes:**
 - Scope: what will and won't change
 - Steps: ordered list of actions
-- Files affected: logic, view, level data, `DESIGN.md`, tests
-- Risks: **determinism (I4)**, **no-lies (I5)**, the board-full rule (I9), balance impact, saved undo states, existing seeds producing different levels
+- Files affected: engine, view, config assets / level data, scenes and prefabs, `DESIGN.md`, tests
+- Risks: **determinism (I4)**, **no-lies (I5)**, the board-full rule (I9), balance impact, saved undo states, existing seeds producing different levels, serialized asset references (`.meta` GUIDs)
 - Definition of done: how it will be verified (§3)
 
 ## 3. Validate Your Output
 
 * Validate your work before presenting it as done. In this project that normally means:
-  - the logic is checked **headless**: the bot simulation (random and greedy, `DESIGN.md` §5.9) runs without errors and without timeouts, and the numbers in §5.10 are still true or have been updated;
-  - an **invariant check**: a game state after a move has no empty cell unless the run has ended (I9), the same seed and moves give the same state (I4), and the preview and the real result agree (I5);
-  - a **browser check**: the real drag in a headless browser gives the same grid, queue and completed count as the logic predicted for that move, with no console errors;
-  - the diff shows only the files you meant to change.
+  - the project **compiles** with no errors in the Console, and the **Edit Mode tests** pass;
+  - a change to a rule, a number or a level is checked for **solvability** (I11) without the Editor UI where possible, and the report says how it was checked;
+  - an **invariant check**: a game state after a move has no empty cell unless the run has ended (I9), the same seed and moves give the same state hash (I4), and the preview and the real result agree (I5); after a **booster** use there is no hole, the target list keeps the same multiset, no stream pointer moved, and undo restores the board state exactly without refunding the use; a target completes at exactly its own `cap` (3 to 5);
+  - a **Play Mode check** (once it exists): a real drag on the board gives the same grid, queue and completed count as the engine predicted for that move, with no Console errors;
+  - the diff shows only the files you meant to change, with their `.meta` files.
 * If the request doesn't say how to verify the result, ask before starting:
 
 > "How should I verify this?
-> - Re-run the bot simulation and compare with `DESIGN.md` §5.10?
-> - A browser drag test for a specific situation (e.g. dragging a row that contains a spring)?
-> - A number the change must hit (e.g. random-play win rate between 5% and 20%)?"
+> - Show that every level touched can still be won?
+> - A Play Mode drag test for a specific situation (e.g. dragging a row that contains a spring)?
+> - A number the change must hit (e.g. a target `cap` of 4 completing at exactly 4 units)?"
 
-* If you can't run a check (no browser, no Node), say which checks you couldn't run. Don't report "tested" for a static read.
+* If you can't run a check (no Unity Editor, CLI or MCP available), say which checks you couldn't run. Don't report "tested" for a static read.
 
 ## 4. Self-Assess Before Delivering
 
 * Before presenting work as done, check it against:
   1. **User expectations:** does it do what was asked, including the definition of done?
-  2. **Rules:** invariants I1–I11, `AGENTS.md` ground rules, the removed-mechanics list (§5.12), and **is `DESIGN.md` still true?**
+  2. **Rules:** invariants I1–I11, `AGENTS.md` ground rules, and **is `DESIGN.md` still true?**
 * If either check fails, iterate before delivering.
 * Aim for **≥ 80% confidence** that both hold (the user may change this per task).
 * **Iteration limit: 3 self-iterations.** If you're still below the threshold, stop and ask: say what you tried, where you're stuck, and your current confidence.
@@ -66,26 +67,27 @@ These are the foundational rules for how you interact with the user and approach
 ## 5. Iterate Appropriately
 
 * Simple tasks: one pass.
-* Complex tasks: change the **pure logic** first and test it headless, then the view, then the level data, then the docs.
+* Complex tasks: change the **pure engine** first and test it in Edit Mode, then the view, then the config and level assets, then the docs.
 * After each iteration, summarise what was done, what remains, and what needs user input.
 
 ## 6. Respect Scope
 
 * Change only what was requested. No drive-by refactors, renames or "improvements".
 * If you notice a bug or a rule inconsistency outside the task, mention it and, if it is a known deviation, add it to `DESIGN.md` (for example next to invariant I5). Don't silently fix it.
-* Keep diffs reviewable. The prototype builds one HTML file from several sources; edit the sources, not the generated file.
+* Keep diffs reviewable. Don't hand-edit serialized scene, prefab or asset YAML when the Editor, a Unity MCP or an editor script can do it.
 
 ## 7. Read Before Writing
 
-* Read the existing code and the relevant `DESIGN.md` sections before writing. Match established patterns: logic is **pure** (no DOM, no `Math.random`), every move returns a list of **phases** with snapshots, the view only plays phases, tuning lives in data.
+* Read the existing code and the relevant `DESIGN.md` sections before writing. Match established patterns: the engine is **pure** (no `UnityEngine` types, no `UnityEngine.Random`), every move returns a list of **phases** with snapshots, the view only plays phases, tuning lives in data.
 * Don't introduce a new pattern when one exists, even if you prefer yours.
+* **Display names are not code names.** The fruit theme (`DESIGN.md` §9) renames things on screen; identifiers, tests, commits and docs keep the terms of `DESIGN.md` §8.
 * If an existing pattern conflicts with these rules, follow the codebase and flag the inconsistency.
 
 ## 8. Be Transparent
 
 * State assumptions explicitly. When you used a default for an open question, say which one.
 * When several approaches are valid, list them with trade-offs and let the user choose.
-* Label claims: **verified in code**, **verified by simulation**, **verified in the browser**, **arithmetic**, or **unverified**. Never present a bot result as a player playtest; the greedy bot is an upper bound on skill (§5.9).
+* Label claims: **verified in code**, **verified by simulation**, **verified in Play Mode**, **arithmetic**, or **unverified**. Never present a simulation result as a player playtest.
 
 ## 9. Teach, Don't Just Execute
 
@@ -104,13 +106,13 @@ These are the foundational rules for how you interact with the user and approach
 
 ## Tooling access (Claude-specific)
 
-* **Prototype phase:** you work with files, Node and a headless browser (Playwright). Use the bot simulation for balance and the browser test for the drag-to-logic check. Both are described in `AGENTS.md` §6.
-* **Unity phase [PROPOSED]:** if a Unity MCP is connected, prefer it for inspecting scenes, prefabs and the Console. Check your tool list for the exact tools. After editing scripts: refresh, wait for the recompile, read the Console.
-* For broad audits, split the work across subagents by area (logic, view, level data, docs), each citing `file:line`, then merge the results.
+* You work with files and, if available, Unity through its CLI or a Unity MCP. Prefer the MCP for inspecting scenes, prefabs and the Console; check your tool list for the exact tools. After editing scripts: refresh, wait for the recompile, read the Console.
+* The engine is plain C#, so its tests run as Edit Mode tests. The recipes are in `AGENTS.md` §6.
+* For broad audits, split the work across subagents by area (engine, view, config and level data, docs), each citing `file:line`, then merge the results.
 
 ## Project Rules
 
-There are no path-scoped rule files yet. The rules that matter are in `DESIGN.md` §2 (invariants) and `AGENTS.md` §1 (ground rules). **[PROPOSED]** when the Unity project exists, add `.claude/rules/` files (C# lifecycle and statics, scenes and prefabs, config assets) and list them here, like the OverTimer project does.
+There are no path-scoped rule files yet. The rules that matter are in `DESIGN.md` §2 (invariants) and `AGENTS.md` §1 (ground rules). **[PROPOSED]** add `.claude/rules/` files (C# lifecycle and statics, scenes and prefabs, config assets) and list them here once there is code to apply them to.
 
 ## Repository Instructions
 
