@@ -6,9 +6,9 @@
 
 | Snapshot | Value |
 |---|---|
-| Last verified against the repository | **2026-11-04**, static read of branch `BoardCore` @ `6bfb37b` (Phase 0: Setup) plus uncommitted Phase 1 engine files and doc edits. Nothing was compiled or run by the agent: the Edit Mode tests are written but **not yet run** |
-| State of the game | **The engine of Phase 0 and 1 is written** (random, board, slide, match, settle, `MoveResolver.Move`, 33 Edit Mode tests). There is no view, no slot or queue, no config asset, no art and no audio. §6 lists what exists and what is planned |
-| Branch / commit | `BoardCore` @ `6bfb37b`; `main` @ `f566452`; remote `https://github.com/hanpierrot/Slide-Jam.git`; the Phase 1 files and the doc edits are uncommitted |
+| Last verified against the repository | **2026-11-04**, static read of branch `BoardCore` @ `706d99c` (Phase 1 - Engine done) plus uncommitted work: the view (`Assets/Scripts/Game/`), `SampleScene.unity`, the placeholder sprite, TMP Essentials and the doc edits. The scene wiring below was read from the scene file. The user ran the 38 Edit Mode tests and the view in Play mode and reported no errors (told in chat; no result file; the agent did not run Unity) |
+| State of the game | **Engine of Phase 0 and 1 done, and the Phase 1 view built:** a drag slides a line, `Move` runs, the phases play with animation (snap, `Clear` pulse, `Fall`), and a move counter and a Restart button exist. Still no slot, queue, win or loss, config asset, art or audio. §6 lists what exists and what is planned |
+| Branch / commit | `BoardCore` @ `706d99c`; `main` @ `f566452`; remote `https://github.com/hanpierrot/Slide-Jam.git`. Uncommitted: the view scripts, `SampleScene.unity`, `Assets/Art/Sprites/Square.png`, `Assets/TextMesh Pro/`, `ProjectSettings/SceneTemplateSettings.json`, the docs |
 | Engine | Unity **2022.3.62f3** (LTS), 2D template, built-in render pipeline, single scene |
 | Design spec | `DOCS/DESIGN.md` **v0.4** (2026-11-03) is the source of truth for rules, numbers and interfaces. This file records the **project state**: setup, code map, decisions, issues and what is built |
 | Prototype | A throwaway HTML prototype (three levels, three boosters, a fruit-garden skin) produced the rules. It is **not in this repository** and nothing here depends on it |
@@ -29,8 +29,8 @@ Paths are relative to the repository root. Line numbers drift, so search by symb
 4. [Team, ownership and workflow](#4-team-ownership-and-workflow)
 5. [Project setup](#5-project-setup)
 6. [Code map](#6-code-map)
-7. [Game flow and persistence (planned)](#7-game-flow-and-persistence-planned)
-8. [Input, UI and tutorial (planned)](#8-input-ui-and-tutorial-planned)
+7. [Game flow and persistence](#7-game-flow-and-persistence)
+8. [Input, UI and tutorial](#8-input-ui-and-tutorial)
 9. [Content status: levels, boosters, theme](#9-content-status-levels-boosters-theme)
 10. [Tuning values](#10-tuning-values)
 11. [Tools and testing](#11-tools-and-testing)
@@ -62,13 +62,13 @@ The invariants are **[LOCKED]** and worded in `DESIGN.md` §2. Do not copy the w
 |---|---|---|
 | I1 | One win, one loss | not built |
 | I2 | Turn-based | not built |
-| I3 | One core verb; boosters are not moves | slide is one move and a zero shift is refused (test, not yet run); boosters not built |
-| I4 | Deterministic (seeded column streams, no hidden randomness) | partly: streams, grid generation and `Move` are pure and tested through `Hash()` (tests not yet run); undo and replays not built |
+| I3 | One core verb; boosters are not moves | slide is one move and a zero shift is refused (tested); the drag path runs in Play mode (no errors reported); boosters not built |
+| I4 | Deterministic (seeded column streams, no hidden randomness) | partly: streams, grid generation and `Move` are pure and tested through `Hash()`; undo and replays not built |
 | I5 | No lies (next-spawn dots and preview are real) | not built |
 | I6 | Combos never punish (cascade surplus vanishes) | not built |
 | I7 | Locks close a door, never end the run | not built |
-| I8 | Resolution is atomic | partly: `Move` returns the whole phase list at once; there is no view yet |
-| I9 | Board full after settle | tested after every `Move` in the sweep tests (not yet run); the chain case is Phase 4 |
+| I8 | Resolution is atomic | partly: `Move` returns the whole phase list at once and the view ignores input while it plays (`IsBusy`); slots, win and loss do not exist yet |
+| I9 | Board full after settle | tested after every `Move` in the sweep tests; the chain case is Phase 4 |
 | I10 | Tuning in data | not built |
 | I11 | Every shipped level is solvable | not built; the way to check it is **OPEN** (§12) |
 
@@ -124,11 +124,11 @@ The conventions that bind every change are in `AGENTS.md` §1 and §6. Summary o
 | Built-in modules | the default 2D template set (physics, physics2d, audio, ui, particlesystem, ...) | `physics` / `physics2d` are not needed by the rules |
 
 - **Not installed:** the Input System package (the project uses the classic Input Manager, `activeInputHandler: 0`), URP, DOTween, any Unity AI or MCP package. The engine must not depend on any of them. Adding one is a package change: ask first.
-- Assemblies: `SlideJam.Engine` (No Engine References, not auto-referenced) and `SlideJam.Tests.EditMode`. `SlideJam.Game` and the PlayMode tests are planned (§6).
+- Assemblies: `SlideJam.Engine` (No Engine References, not auto-referenced), `SlideJam.Game` (references `SlideJam.Engine`, `UnityEngine.UI` and `Unity.TextMeshPro`; not auto-referenced) and `SlideJam.Tests.EditMode`. The PlayMode tests are planned (§6).
 
 ### 5.2 Repository
 
-- Remote: `https://github.com/hanpierrot/Slide-Jam.git`. Branches: `main` and local `BoardCore`. Commits: `f566452 Init project` (`main`), `6bfb37b Phase 0: Setup` (`BoardCore`).
+- Remote: `https://github.com/hanpierrot/Slide-Jam.git`. Branches: `main` and local `BoardCore`. Commits: `f566452 Init project` (`main`), `6bfb37b Phase 0: Setup` and `706d99c Phase 1 - Engine done` (`BoardCore`).
 - `.gitattributes`: Git LFS rules for images, audio, video, fonts and archives (74 `lfs` lines); Unity YAML files use `merge=unityyamlmerge eol=lf`. `.gitignore` is the standard Unity one.
 - **The `unityyamlmerge` merge driver is not defined in this clone's git config** (`git config --get merge.unityyamlmerge.driver` prints nothing). Unless it is set in a global gitconfig, the `.gitattributes` rule falls back to a text merge. Set it up before the first scene or prefab merge. **OPEN** (§12).
 - Agent instructions: `AGENTS.md` (all agents), `CLAUDE.md` (Claude; imports `AGENTS.md`). There is no `.claude/` folder yet.
@@ -139,7 +139,10 @@ The conventions that bind every change are in `AGENTS.md` §1 and §6. Summary o
 | Path | Contents today |
 |---|---|
 | `Assets/Scenes/SampleScene.unity` | the only scene, in the build list (index 0) |
-| `Assets/Art/`, `Audio/`, `Design/`, `Resources/` | empty (only `.meta` files) |
+| `Assets/Art/Sprites/Square.png` | the placeholder sprite used for blocks, the board background and the mask (from *Create > 2D > Sprites > Square*) |
+| `Assets/Audio/`, `Design/`, `Resources/` | empty (only `.meta` files) |
+| `Assets/TextMesh Pro/` | TMP Essentials, imported when the first TMP object was created |
+| `Assets/Scripts/Game/` | assembly `SlideJam.Game` (§6) |
 | `Assets/Scripts/Engine/` | assembly `SlideJam.Engine`: `Rng/`, `Board/`, `Moves/` (§6) |
 | `Assets/Tests/EditMode/` | assembly `SlideJam.Tests.EditMode`: `Rng/`, `Board/`, `Moves/` (§11) |
 
@@ -171,9 +174,19 @@ Assets/Tests/PlayMode/   assembly SlideJam.Tests.PlayMode
 
 Linear colour space on mobile needs OpenGL ES 3 / Vulkan on Android. Revisit when the first device build is made (§12).
 
-### 5.5 Scene `SampleScene.unity` [verified: default template scene]
+### 5.5 Scene `SampleScene.unity` [verified in the scene file]
 
-Camera and light only, no game objects. **Planned** (not built): a `MANAGERS` root (game controller, config references), a `Board` root (grid, slots, queue, vault, next-spawn dots), a `Canvas` (HUD, booster bar, tutorial overlay, end overlay) and a fixed orthographic camera for the 360-unit reference width (`DESIGN.md` §4). Restart = reload the scene or rebuild the state; no `DontDestroyOnLoad`.
+The single scene. Roots, with the scripts attached to each:
+
+| Root | Contents |
+|---|---|
+| `Main Camera` | orthographic, solid colour background, `CameraFit` (size set at run time from the level) |
+| `Board` | `BoardView`; creates its `Background`, `Mask` (a `SpriteMask`) and `Blocks` children at run time. The block sprite is `Assets/Art/Sprites/Square.png` |
+| `GameController` | `GameController`, `PhasePlayer`, `DragInput` |
+| `Canvas` | Screen Space Overlay, Canvas Scaler Scale With Screen Size 360 × 640, match width; `HudView`; children `MovesText` (TMP) and `RestartButton` (OnClick → `GameController.Restart`) |
+| `EventSystem` | created with the Canvas (classic input module) |
+
+**Not built yet:** slots, queue, vault and next-spawn dots, the booster bar, the tutorial and end overlays, a `MANAGERS` root. Restart rebuilds the state in place; no `DontDestroyOnLoad`.
 
 ---
 
@@ -187,28 +200,30 @@ What exists is marked [built]; the rest is the plan from `DESIGN.md` §6. Update
 | Engine `Board/` [built] | `Block`, `Axis`, `Cell`, `LevelData`, `BoardState` (`New`, `Clone`, `Hash`), `Board` (`Shift`, `ShiftAmount`, `LineLength`, `FloorMod`), `Matcher` (`Find`, `HasMatch`), `GridGenerator` and `SandSettler` (both internal; `SandSettler` is gravity only) |
 | Engine `Moves/` [built] | `MoveResolver.Move`, `MoveResult`, `Phase`, `PhaseKind` (`Shift`, `Clear`, `Fall`), `FallStart` |
 | Engine [planned] | slots, queue, `Seq` / `Pre` / `Vault`, complete / pull / overflow / win and undo (Phase 2), `Preview` (Phase 3), dual / ×2 / locked slot / `qGrow` / spring / sealed / chain with sand flow (Phase 4), `Hammer`, `SwapTarget`, `Stash` (Phase 5) |
-| Game (`SlideJam.Game`) | `BoardView`, `DragInput`, `PhasePlayer` (animation), `HUD`, `BoosterBar`, `TutorialOverlay`, `TextTable` (display names), `SaveData` (tutorial-seen flags, booster counts), the `GameConfig` and `LevelConfig` ScriptableObjects and their conversion to engine data |
-| Tests [Edit Mode built] | `Rng/Mulberry32Tests`, `Board/MatcherTests`, `Board/BoardTests`, `Board/BoardStateTests` (+ the `TestGrids` helper), `Moves/MoveResolverTests`. Planned: caps, boosters, per-mechanic rules; Play Mode: real drag vs engine prediction |
+| Game `SlideJam.Game` [built] | `GameController` (owns the `BoardState`: `TryMove`, `Restart`, `IsBusy`, `StateChanged`; temporary level fields `_rows`, `_cols`, `_colors`, `_seed`), `BoardView` (block views by id with a pool: `Build`, `ShowState`, `ShowLineOffset`, `ShowBlock`, `TryGetCell`, `Matches`), `BlockView`, `DragInput`, `PhasePlayer` (snap, snap back, `Clear` pulse, `Fall`), `CameraFit`, `HudView` (move counter) |
+| Game [planned] | slot and queue views, `BoosterBar`, `TutorialOverlay`, `TextTable` (display names), `SaveData` (tutorial-seen flags, booster counts), the `GameConfig` and `LevelConfig` ScriptableObjects and their conversion to engine data |
+| Tests [Edit Mode built] | `Rng/Mulberry32Tests`, `Board/ColumnStreamTests` (it tests `Rng/ColumnStream` but lives in `Board/`), `Board/MatcherTests`, `Board/BoardTests`, `Board/BoardStateTests` (+ the `TestGrids` helper), `Moves/MoveResolverTests`. Planned: caps, boosters, per-mechanic rules; Play Mode: real drag vs engine prediction |
 
 Singletons and services are **not decided**. Prefer plain objects owned by one game controller over `static` singletons; any static must be reset on scene load.
 
 ---
 
-## 7. Game flow and persistence (planned)
+## 7. Game flow and persistence
 
-- **Run lifecycle [planned]:** load a `LevelConfig` → `BoardState.New` → player slides or uses a booster → engine returns a phase list → view plays it → repeat until `Over` is `Win` or `Lose` → end overlay (Undo on loss, Restart). Input is ignored while phases play (I8).
+- **Run lifecycle:** [built, Phase 1] `GameController.Restart` builds `BoardState.New` from temporary serialized level fields; `DragInput` calls `GameController.TryMove`, which runs `MoveResolver.Move`; the new state is applied at once (`State`, `StateChanged`) and `PhasePlayer` plays the phases while `IsBusy` blocks input; afterwards `BoardView.Matches` checks the screen against the state (it logs an error if they differ) and `ShowState` redraws it. A refused move snaps the line back. [planned, Phase 2] load a `LevelConfig`, slots and queue, `Over` is `Win` or `Lose`, an end overlay with Undo and Restart.
 - **Endings:** `EndReason` = `Win`, `QueueOverflow` (append-only). `DESIGN.md` §5.7.
 - **Undo:** an unlimited stack of state snapshots in the first build; a **used booster is never refunded** (the booster count is not in the snapshot). `DESIGN.md` §5.7, §5.9.
 - **Persistence [planned, keys not chosen]:** tutorial steps already shown (`TutorialId`), the player's booster counts, the level reached. Nothing from the engine state is saved mid-run. Currency and prices are product settings, **OPEN** (§12).
 
 ---
 
-## 8. Input, UI and tutorial (planned)
+## 8. Input, UI and tutorial
 
-- **Input:** one pointer path for mouse and touch through the classic Input Manager. Axis lock after 8 logical units, `notches = round(offset / cellSize)`, snap in 130 ms, locked lines flash red. Full rules: `DESIGN.md` §4.1.
-- **Preview:** runs the real move on a copy at every pointer move; white / orange outlines and the overflow warning. `DESIGN.md` §4.2.
-- **Tutorial:** overlay steps shown once, stored in save data, listed by append-only `TutorialId` in a data asset: `Slide`, `Targets`, `Queue` at game start; `Dual`, `X2`, `LockedSlot`, `QueueGrow`, `Chain`, `Seal`, `Spring` at the first level that has the mechanic; `Hammer`, `SwapTarget`, `Stash` when the booster is first offered. `DESIGN.md` §5.8.
-- **Layout:** portrait, 360 logical units reference width, top to bottom: slots, next strip, queue and vault, next-spawn dots, grid, booster bar, undo / restart. `DESIGN.md` §4.
+- **Input [built]:** `DragInput`, one pointer path (`Input.GetMouseButton*`; a touch works through the simulated mouse). On press it ignores the pointer when the view is busy or over uGUI (`EventSystem.IsPointerOverGameObject`, with the finger id on touch). Axis lock after 8 logical units of the 360-wide reference (`_lockDistance`), `notches = round(offset)`. Snap 130 ms and snap back 140 ms are played by `PhasePlayer`. The locked-line flash is planned (Phase 4). Rules: `DESIGN.md` §4.1.
+- **Preview [planned, Phase 3]:** runs the real move on a copy at every pointer move; white / orange outlines and the overflow warning. `DESIGN.md` §4.2.
+- **Tutorial [planned]:** overlay steps shown once, stored in save data, listed by append-only `TutorialId` in a data asset: `Slide`, `Targets`, `Queue` at game start; `Dual`, `X2`, `LockedSlot`, `QueueGrow`, `Chain`, `Seal`, `Spring` at the first level that has the mechanic; `Hammer`, `SwapTarget`, `Stash` when the booster is first offered. `DESIGN.md` §5.8.
+- **Layout [partly built]:** portrait, 360 logical units reference width, top to bottom: slots, next strip, queue and vault, next-spawn dots, grid, booster bar, undo / restart. `DESIGN.md` §4.
+- **HUD [built]:** a Screen Space Overlay canvas (Canvas Scaler 360 × 640, match width) with `MovesText` (TMP, driven by `HudView` through `GameController.StateChanged`, placeholder format "Moves: {0}") and `RestartButton` (OnClick → `GameController.Restart`). The strings are English placeholders until the text table exists: the default TMP font (LiberationSans SDF) lacks some Vietnamese glyphs.
 
 ---
 
@@ -216,13 +231,13 @@ Singletons and services are **not decided**. Prefer plain objects owned by one g
 
 | Item | Status |
 |---|---|
-| Level 1 "Vườn nhỏ" (6×6, no obstacles) | specified in `DESIGN.md` §5.1; **no `LevelConfig` asset yet** |
+| Level 1 "Vườn nhỏ" (6×6, no obstacles) | specified in `DESIGN.md` §5.1; runs today only as the temporary fields on `GameController` (6 × 6, 5 colours, seed 20261031) with the plain board; **no `LevelConfig` asset yet** |
 | Level 2 "Vườn ươm" (6×6, ×2, dual, locked slot, growing queue) | specified; no asset |
 | Level 3 "Nhà kính" (7×7, adds chain, sealed block, spring) | specified; the special block cells of the prototype are **not** recorded in `DESIGN.md` v0.4 (the level-data section was dropped), so Level 3's block layout must be re-decided **OPEN** (§12) |
 | Boosters Hammer, Swap target, Stash | rules specified (`DESIGN.md` §5.9); no code. Prices, currency and free uses are undecided product settings |
-| Fruit set (strawberry, blueberry, pear, orange, plum) | decided (`DESIGN.md` §9). `DESIGN.md` says the art "already exists", but **no art file is in this repository**; where the assets live is **OPEN** |
+| Fruit set (strawberry, blueberry, pear, orange, plum) | decided (`DESIGN.md` §9). `DESIGN.md` says the art "already exists", but **no fruit art is in this repository**; where it lives is **OPEN**. Today a block is the `Square` sprite tinted with a 5-colour placeholder palette in `BoardView` (no shape per colour yet) |
 | Audio | none; the first build has no sound |
-| Fonts | Nunito (text) and Fredoka (headings) planned; not imported |
+| Fonts | only the default TMP font (LiberationSans SDF) is imported; Nunito (text) and Fredoka (headings) are planned |
 
 ---
 
@@ -235,13 +250,15 @@ All numbers are in `DESIGN.md` §5.1 (global table) and §5.9 (boosters). There 
 
 A `cap` outside `capMin..capMax` is a data error and must fail on load.
 
+**Temporary values outside any asset (an I10 debt).** They are serialized fields visible in the Inspector, not literals in logic, but they are not in `GameConfig` / `LevelConfig` yet: `PhasePlayer` timings (snap 0.13 s, snap back 0.14 s, clear 0.17 s, pulse 1.15, fall 0.16 s + 0.09 s per cell); `DragInput._lockDistance` 8; `BoardView._blockScale` 0.92, `_boardColor` and the 5-colour palette; `CameraFit._margin` 0.5 cell; `GameController` level fields (6 × 6, 5 colours, seed 20261031).
+
 ---
 
 ## 11. Tools and testing
 
 | Tool | Where | Use |
 |---|---|---|
-| Unity Test Framework 1.1.33 | `Assets/Tests/EditMode` (33 tests written, not yet run), `Assets/Tests/PlayMode` (none yet); Window > General > Test Runner | the engine is pure C#, so rule and invariant tests run in Edit Mode |
+| Unity Test Framework 1.1.33 | `Assets/Tests/EditMode` (38 tests, all passing as reported by the user), `Assets/Tests/PlayMode` (none yet); Window > General > Test Runner | the engine is pure C#, so rule and invariant tests run in Edit Mode |
 | Batch mode | see `AGENTS.md` §6 | `Unity.exe -batchmode -nographics -projectPath . -runTests -testPlatform EditMode ...`; the Editor must be closed |
 | Unity CLI / MCP | whatever the session provides | inspect scenes, prefabs and the Console; refresh and wait for the recompile after script edits |
 
@@ -249,7 +266,8 @@ Testing approach:
 
 - Put every rule in the pure engine and test it headless. Tests read numbers from configs and do not pin balance values.
 - Planned invariant tests: same seed and moves give the same `Hash()` (I4); preview equals result (I5); no hole after a non-terminal move (I9, not on a lost state); a target of `cap` 3, 4 and 5 completes at exactly its own `cap`; after any booster use: no hole, the multiset of `Seq` unchanged, `(Seq.Length − SeqI) + open slots = total − Done`, no stream pointer moved, no unit added to the queue, undo restores the board and does not refund the use.
-- Written so far (Edit Mode): the closed-form generator against a stepwise reference; matcher runs; slide wrap, direction and floor-mod; grid generation (full, unique ids, never a match over 60 seeds and two sizes); `Clone` independence and `Hash`; `Move` (zero shift refused, input not mutated, two hand-calculated scenarios, full and match-free board after every move, spawns equal clears, round numbering, determinism, same result after "undo").
+- Covered so far (Edit Mode, 38 tests, all passing): `ColumnStream` range, determinism, column separation and colour use; the closed-form generator against a stepwise reference; matcher runs; slide wrap, direction and floor-mod; grid generation (full, unique ids, never a match over 60 seeds and two sizes); `Clone` independence and `Hash`; `Move` (zero shift refused, input not mutated, two hand-calculated scenarios, full and match-free board after every move, spawns equal clears, round numbering, determinism, same result after "undo").
+- The view has no automated test. It is checked by hand in Play mode, and `GameController` runs `BoardView.Matches(State)` after every move and logs an error if the screen differs from the state.
 - No bot and no solver exist. How solvability is checked (I11) is **OPEN** (§12).
 - There is no player playtest data. Any difficulty claim must be labelled arithmetic, simulation or observed run.
 
@@ -270,7 +288,11 @@ Only genuine defects and undecided questions live here. When you fix one, move i
 | Q7 | Low | Linear colour space and scripting backend not reviewed for mobile | Project Settings | review at the first device build |
 | Q8 | Low | Ownership of areas is not recorded (§4) | this file | ask the team |
 | Q9 | Low | `DESIGN.md` §1 says "about 20–40 slides" per level as a design target; nothing has measured it on the Unity engine | `DESIGN.md` | re-state when levels exist |
-| Q10 | Low | The Phase 0 plan had `Assets/Tests/EditMode/Rng/ColumnStreamTests.cs` (5 tests); it is not in the repository, so `ColumnStream` is only covered through the grid and `Move` tests. `Mulberry32Tests` has no golden values from the prototype | `Assets/Tests/EditMode/Rng/` | add the file; add golden values if the prototype is found |
+| Q10 | Low | No golden values from the prototype exist for `Mulberry32` / `ColumnStream`: the tests prove closed form == stepwise form, not equality with the prototype (see S12) | `Assets/Tests/EditMode/Rng/` | add golden values if the prototype is found |
+| Q11 | Low | While a line is dragged, a block jumps to the other edge when its centre crosses the edge (no ghost copy at the seam) | `BoardView.ShowLineOffset` | polish (level 2 of the view work) |
+| Q12 | Low | Animation curves and timings are first guesses; a refused move only snaps back (no shake or hint) | `PhasePlayer` | tune in Play mode; move the values to `GameConfig` |
+| Q13 | Low | HUD text is English and the default TMP font lacks some Vietnamese glyphs; the display text table does not exist | `HudView`, TMP | choose a font with Vietnamese support, build the text table (Phase 6) |
+| Q14 | Low | Untracked, editor-generated files: `ProjectSettings/SceneTemplateSettings.json`, `Assets/TextMesh Pro/` | repository | decide whether to commit them (both are normally committed) |
 
 ---
 
@@ -279,6 +301,7 @@ Only genuine defects and undecided questions live here. When you fix one, move i
 | # | Fixed | What | Where |
 |---|---|---|---|
 | — | 2026-11-03 | Default orientation was Auto Rotation; set to Portrait with the other auto-rotate options off | `ProjectSettings/ProjectSettings.asset` |
+| — | 2026-11-04 | `ColumnStreamTests` (5 tests) was missing after Phase 0; it is now in the repository | `Assets/Tests/EditMode/Board/ColumnStreamTests.cs` |
 
 ---
 
@@ -286,11 +309,11 @@ Only genuine defects and undecided questions live here. When you fix one, move i
 
 Nothing is built. Suggested order, following `CLAUDE.md` §5 (engine first, then view, then data, then docs). **Treat as a proposal; the team sets priorities.**
 
-1. **Engine core:** [Phase 0 and 1 written, tests not yet run] `BoardState`, `ColumnStream`, `Matcher`, shift, clear, `SandSettler`, `Move`. [Phase 2] complete, pull, overflow and win checks, the cap rule and undo. The Phase 1 view (grid, drag, phase player) is not started.
+1. **Engine core:** [Phase 0 and 1 done, 38 tests pass] `BoardState`, `ColumnStream`, `Matcher`, shift, clear, `SandSettler`, `Move`. [Phase 2] complete, pull, overflow and win checks, the cap rule and undo. The Phase 1 view (grid, drag, phase player) is not started.
 2. **Mechanics:** ×2, dual, locked slot, growing queue, then chain, sealed block, spring, with a test each (I7 exits).
 3. **Boosters:** Hammer, Swap target, Stash with `Seq` / `Pre` / `Vault` in the snapshot, and the booster invariant tests.
 4. **Preview and undo** on the engine side.
-5. **View:** board, drag input, `PhasePlayer`, HUD, booster bar, end overlay, then the tutorial and the text table.
+5. **View:** [Phase 1 built: board, drag, `PhasePlayer`, move counter, Restart] remaining: slot and queue views, booster bar, end overlay, then the tutorial and the text table.
 6. **Config assets and levels:** `GameConfig`, three `LevelConfig`s (after Q1), solvability check (after Q2).
 7. **Theme and art:** import the fruit set (Q3), fonts, background.
 
@@ -320,6 +343,10 @@ Condensed; newest last. The rule decisions behind the prototype are in `DESIGN.m
 | S14 | 2026-11-04 | An empty cell is a `Block` with `Id == 0`; real ids start at 1 | final |
 | S15 | 2026-11-04 | `Fall` reports `Starts` as an ordered `FallStart` list; guards `MaxRounds` and 500 settle passes throw | final |
 | S16 | 2026-11-04 | The stream generator is stateless (closed form), so no cache and no shared state | final |
+| S17 | 2026-11-04 | The board is drawn with `SpriteRenderer`s and a `SpriteMask` in world space; uGUI is used for the HUD only | final |
+| S18 | 2026-11-04 | Animation uses coroutines and curves; DOTween is not installed and adding a package needs a decision | final |
+| S19 | 2026-11-04 | The new state is applied at once and the view catches up; `BoardView.Matches` checks the screen against the state after every move | final |
+| S20 | 2026-11-04 | Level fields stay on `GameController` until `LevelConfig` exists; blocks are a tinted `Square` sprite with a placeholder palette until the art decision (Q3) | temporary |
 
 ---
 
@@ -332,7 +359,8 @@ Everything in this file marked `[verified]` was read from a file. Not checked:
 | The project opens and compiles in Unity 2022.3.62f3 with the current packages | open in the Editor; read the Console |
 | The Portrait setting survived (the Editor was open when the file was edited and may rewrite it) | Project Settings > Player > Resolution and Presentation |
 | `unityyamlmerge` availability | `git config --get merge.unityyamlmerge.driver` and the Unity install's `UnityYAMLMerge` |
-| The 33 Edit Mode tests compile and pass, including the two hand-calculated `Move` scenarios | Test Runner > EditMode > Run All |
+| The Edit Mode results (38 pass) are the user's report; the agent has not seen a result file | Test Runner > EditMode > Run All, or the batch command in `AGENTS.md` §6 |
+| The Phase 1 view in every case (snap back, a full revolution, cascades, Restart in the middle of an animation, touch on a device): the user ran it without errors but did not report each case | Play mode checklist in the Phase 1 view notes; build to a phone for touch |
 | LFS is installed and the rules match the planned art / audio | `git lfs env` |
 
 ---
@@ -362,6 +390,8 @@ Run this before every commit. If a box applies, update that section **in the sam
 |---|---|
 | 2026-11-03 | First version. Written from `DESIGN.md` v0.4, the repository at `f566452`, `Packages/manifest.json` and `ProjectSettings/`; structure adapted from another project's `PROJECT.md`. Records that no game code exists yet |
 | 2026-11-04 | Phase 0 and 1 engine recorded: §2 statuses, §5, §6 code map, §11 tests, §12 Q10, §14, decisions S11–S16. Written from the files in the repository at `BoardCore`; nothing was run |
+| 2026-11-04 | Tests run by the user (38 pass): statuses in §2, §11, §14, §16 changed from "not yet run"; snapshot moved to `706d99c`; `ColumnStreamTests` found; Q10 reduced to the missing golden values |
+| 2026-11-04 | Phase 1 view recorded (levels 0 and 1 of the view plan: `BoardView`, `DragInput`, `PhasePlayer`, `HudView`, scene wiring read from the scene file): §1 snapshot, §2 I3 and I8, §5.1 assemblies, §5.3, §5.5, §6, §7, §8, §9, §10 temporary values, §11, §12 Q11–Q14, §14, decisions S17–S20 |
 
 ---
 

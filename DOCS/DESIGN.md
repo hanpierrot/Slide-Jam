@@ -4,7 +4,7 @@
 **Engine:** Unity **2022.3.62f3** (LTS), 2D, built-in render pipeline, classic Input Manager · one finger: drag only · single screen
 **Platform:** target iOS and Android, portrait only (the project's default orientation is Portrait). The Editor uses the mouse through the same pointer path as touch
 **Working title:** Slide Jam (change freely; nothing in the rules depends on it) · **Theme:** "Vườn trái cây" (fruit garden), display only, §9
-**Version:** 0.5 (2026-11-04) — v0.5 records the decisions made while writing the first engine code: the colour mapping and the separate grid stream (I4 detail), the slide direction (§5.2), the empty cell, `MoveResult`, the reduced phase kinds and the `FallStart` list (§6) and the stateless stream generator (§7). v0.4 lets each target hold 3 to 5 units and lets every level choose its number of targets (§5.1), drops the level-data, balance and measurement sections, turns the hints into a tutorial (§5.8), makes a used booster non-refundable (§5.7, §5.9) and changes the fruit set (§9). v0.3 added the third reference level, the three boosters, the theme and the vault in the resolution order. v0.2 (2026-11-02) wrote the rules from the prototypes and rewrote interfaces and implementation notes for Unity. The engine code of Phase 0 and Phase 1 (random, board, slide, match, settle, `Move`) is written in `Assets/Scripts/Engine/` with Edit Mode tests that have not been run yet; everything else on the Unity side is **[PROPOSED]**.
+**Version:** 0.6 (2026-11-04) — v0.6 marks the Phase 1 view (board, drag, phase player, move counter, restart) as built in the Unity project (§4, §7). v0.5 records the decisions made while writing the first engine code: the colour mapping and the separate grid stream (I4 detail), the slide direction (§5.2), the empty cell, `MoveResult`, the reduced phase kinds and the `FallStart` list (§6) and the stateless stream generator (§7). v0.4 lets each target hold 3 to 5 units and lets every level choose its number of targets (§5.1), drops the level-data, balance and measurement sections, turns the hints into a tutorial (§5.8), makes a used booster non-refundable (§5.7, §5.9) and changes the fruit set (§9). v0.3 added the third reference level, the three boosters, the theme and the vault in the resolution order. v0.2 (2026-11-02) wrote the rules from the prototypes and rewrote interfaces and implementation notes for Unity. The engine code of Phase 0 and Phase 1 (random, board, slide, match, settle, `Move`) is written in `Assets/Scripts/Engine/` with 38 Edit Mode tests (run by the user, all passing); the Phase 1 view (`Assets/Scripts/Game/`) runs in Play mode without errors (reported by the user); everything else on the Unity side is **[PROPOSED]**.
 
 ---
 
@@ -98,7 +98,7 @@ These are the load-bearing rules. Breaking any one of them breaks the game.
 
 ## 4. Board objects and HUD
 
-The screen is one portrait layout on a reference width of **360 logical units**, top to bottom: target slots, next strip, queue and vault, next-spawn dots, grid, booster bar, undo and restart. Cell size is 54 for a 6×6 grid and 48 for 7×7 (§5.1). The layout is a view decision; the engine does not depend on it. **[PROPOSED]** the Unity view uses a Canvas Scaler (or an orthographic camera) fitted to this reference width.
+The screen is one portrait layout on a reference width of **360 logical units**, top to bottom: target slots, next strip, queue and vault, next-spawn dots, grid, booster bar, undo and restart. Cell size is 54 for a 6×6 grid and 48 for 7×7 (§5.1). The layout is a view decision; the engine does not depend on it. **Built:** the board is drawn with sprites under an orthographic camera fitted to the grid width (`CameraFit`, margin 0.5 cell), and the HUD is a uGUI canvas with a Canvas Scaler at 360 × 640 matching width.
 
 | Object | Role |
 |---|---|
@@ -108,7 +108,7 @@ The screen is one portrait layout on a reference width of **360 logical units**,
 | **Vault** | Next to the queue. Shows the units stored by the Stash booster (§5.9) in **two separate rows of five**, filled left to right and then top to bottom; the label carries the full count, and a unit past the tenth is counted but not drawn |
 | **Next-spawn dots** | Two small blocks above each column: the next two colours that column will spawn (I5) |
 | **Grid** | 6×6 (Levels 1 and 2) or 7×7 (Level 3), per `LevelConfig`. Edge markers (red bars) show which rows and columns are locked |
-| **HUD** | Slide count and targets left |
+| **HUD** | Slide count and targets left (built so far: the slide count and a Restart button, with placeholder English text) |
 | **Booster bar** | Three buttons (§5.9). Each shows what it will do, or why it is off |
 | **Undo / Restart** | Two buttons under the grid. Both are disabled while a resolution is playing |
 | **Tutorial** | A short overlay with a highlight, shown at the start of the game and the first time a mechanic or booster appears (§5.8) |
@@ -124,6 +124,7 @@ Drag only. Press on a cell of the grid, move, release.
 - **Spring.** If the line contains a spring block, one notch moves 2 cells and the line follows the finger at the same ratio (the tutorial explains it the first time, §5.8). With an odd line length the shift is never zero unless the player slides a whole revolution.
 - **A drag that ends on notch 0** (or a multiple of the line length) snaps back in 140 ms and counts as nothing (I3).
 - Input is ignored while a resolution is playing, while a panel is open and after the run has ended.
+- **Built (Phase 1):** `DragInput` reads the classic Input Manager (a touch works through the simulated mouse), ignores a press over uGUI and while the view is busy, locks the axis after 8 logical units and rounds to the nearest notch on release. A refused move (zero shift) snaps the line back in 140 ms. Not built yet: the locked-line flash and the spring step (Phase 4).
 
 ### 4.2 Drag preview [BUILT in the prototypes]
 
@@ -359,9 +360,9 @@ Assets/Tests/PlayMode/   a real drag against the engine's prediction
 
 ## 7. Implementation notes
 
-- **Animation [PROPOSED].** The view plays the phase list one phase at a time and does not decide anything. Starting timings from the prototypes: match pulse 170 ms, a unit's flight 360 ms plus 38–40 ms stagger per unit, slot pop and slot enter 260 ms each, settle `160 + 90 × longest distance` ms, drag snap 130 ms, floating labels 900 ms. They belong in `GameConfig` (I10).
+- **Animation [BUILT for Shift, Clear and Fall].** The view plays the phase list one phase at a time and does not decide anything. Starting timings from the prototypes: match pulse 170 ms, a unit's flight 360 ms plus 38–40 ms stagger per unit, slot pop and slot enter 260 ms each, settle `160 + 90 × longest distance` ms, drag snap 130 ms, floating labels 900 ms. They are serialized fields on `PhasePlayer` for now and belong in `GameConfig` (I10). `Clear` is a scale pulse of the matched blocks (1.15 at the middle, 0 at the end); `Fall` moves each block of `Starts` from its start cell, with a smooth-step curve. After the last phase `BoardView.Matches` checks the screen against the state and `ShowState` redraws it.
 - **Targets and queue during a flight.** While units fly, the slots and the queue are drawn from the state *before* the phase, and the new state appears when the flight ends, so a pip fills when its block lands, not when it leaves.
-- **Input [PROPOSED].** One pointer path for mouse and touch using the classic Input Manager (`Input.GetMouseButton*` / `Input.touches`); the Input System package is not installed. Input is ignored while a phase list is playing (I8).
+- **Input [BUILT].** One pointer path for mouse and touch using the classic Input Manager (`Input.GetMouseButton*` / `Input.touches`); the Input System package is not installed. Input is ignored while a phase list is playing (I8).
 - **Preview cost.** The preview runs a full resolution on a copy at every pointer move. It is small on 7×7. Cache it per notch count if it shows up in a profile.
 - **Tests [PROPOSED].** Edit Mode (Unity Test Framework): a rule test per mechanic, the invariants (I4 same seed and moves give the same `Hash()`, I5 preview equals result, I9 no hole after a non-terminal move), a direct sand-flow test (a chain block stays put and the cells under it are refilled), a cap test (targets of 3, 4 and 5 units complete at exactly their own `cap`), a booster test (after any booster use: no hole, the multiset of `Seq` unchanged, `(Seq.Length − SeqI) + open slots = total − Done`, no stream pointer moved, no unit added to the queue, undo restores the board state exactly and does not refund the use). Play Mode: a real drag on the board compared with the engine's prediction for the same move, including a spring line.
 - **Determinism.** Snapshots are value copies of `BoardState`, so undo restores the stream pointers and a replay of the move list is exact (I4). Do not use `Dictionary` or `HashSet` iteration order, or `float` maths, in anything that decides a rule.
