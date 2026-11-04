@@ -1,0 +1,18 @@
+{
+	"name": "SlideJam.Game",
+	"rootNamespace": "SlideJam.Game",
+	"references": [
+		"SlideJam.Engine",
+		"UnityEngine.UI",
+		"Unity.TextMeshPro"
+	],
+	"includePlatforms": [],
+	"excludePlatforms": [],
+	"allowUnsafeCode": false,
+	"overrideReferences": false,
+	"precompiledReferences": [],
+	"autoReferenced": false,
+	"defineConstraints": [],
+	"versionDefines": [],
+	"noEngineReferences": false
+}

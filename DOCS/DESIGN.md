@@ -4,7 +4,7 @@
 **Engine:** Unity **2022.3.62f3** (LTS), 2D, built-in render pipeline, classic Input Manager · one finger: drag only · single screen
 **Platform:** target iOS and Android, portrait only (the project's default orientation is Portrait). The Editor uses the mouse through the same pointer path as touch
 **Working title:** Slide Jam (change freely; nothing in the rules depends on it) · **Theme:** "Vườn trái cây" (fruit garden), display only, §9
-**Version:** 0.4 (2026-11-03) — v0.4 lets each target hold 3 to 5 units and lets every level choose its number of targets (§5.1), drops the level-data, balance and measurement sections, turns the hints into a tutorial (§5.8), makes a used booster non-refundable (§5.7, §5.9) and changes the fruit set (§9). v0.3 added the third reference level, the three boosters, the theme and the vault in the resolution order. v0.2 (2026-11-02) wrote the rules from the prototypes and rewrote interfaces and implementation notes for Unity. No Unity code exists yet, so everything about the Unity side is **[PROPOSED]**.
+**Version:** 0.7 (2026-11-04) — v0.7 adds the pooled `Block` prefab to the proposed layout (§6.2). v0.6 marks the Phase 1 view (board, drag, phase player, move counter, restart) as built in the Unity project (§4, §7). v0.5 records the decisions made while writing the first engine code: the colour mapping and the separate grid stream (I4 detail), the slide direction (§5.2), the empty cell, `MoveResult`, the reduced phase kinds and the `FallStart` list (§6) and the stateless stream generator (§7). v0.4 lets each target hold 3 to 5 units and lets every level choose its number of targets (§5.1), drops the level-data, balance and measurement sections, turns the hints into a tutorial (§5.8), makes a used booster non-refundable (§5.7, §5.9) and changes the fruit set (§9). v0.3 added the third reference level, the three boosters, the theme and the vault in the resolution order. v0.2 (2026-11-02) wrote the rules from the prototypes and rewrote interfaces and implementation notes for Unity. The engine code of Phase 0 and Phase 1 (random, board, slide, match, settle, `Move`) is written in `Assets/Scripts/Engine/` with 38 Edit Mode tests (run by the user, all passing); the Phase 1 view (`Assets/Scripts/Game/`) runs in Play mode without errors (reported by the user); everything else on the Unity side is **[PROPOSED]**.
 
 ---
 
@@ -53,6 +53,10 @@ These are the load-bearing rules. Breaking any one of them breaks the game.
 > **I4 detail — boosters.** A booster contains no random choice: every tie is broken by a fixed order (§5.9), so a replay of the same moves and booster uses gives the same result.
 >
 > **I4 detail — streams.** Each column owns an independent stream of colours, built from the level seed (`SEED + (column + 1) × 7919`). A refill takes the next colour from the stream of the column it spawns in, and a stream is only ever advanced by a spawn. So the colour of the next two spawns in a column is always known, and the dots above the grid show exactly those.
+>
+> **I4 detail — colour mapping.** A stream value is a `uint` from `mulberry32` (`Mulberry32.At(seed, index)`, a closed form: the value after `index + 1` steps, so no state or cache is needed). The colour is `(value × colors) >> 32` in 64-bit integer arithmetic, a number in `0..colors-1`. `ColumnStream.At(seed, column, index, colors)` is the colour of the column's `index`-th spawn. This mapping has not been compared with the original prototype, so a seed may not give the prototype's level.
+>
+> **I4 detail — initial grid.** The starting grid is rolled from a separate stream, "column −1" (`ColumnStream.At(seed, -1, k, colors)`, whose seed is the level seed itself), so it never moves a real column stream. Cells are rolled row by row, left to right; a cell whose colour would complete a run of 3 to its left or above is re-rolled with the next value of that stream. Block ids start at 1 in the same order.
 
 > **I6 detail — what counts as a cascade.** Resolution runs in numbered rounds. Round 1 is the matches present right after the player's slide. Every later round (matches created by the settle, a seal opening or a chain breaking) is a cascade round. Units from a cascade round that fit a slot go to the slot as usual; units that do not fit disappear with a "vanish ×N" label ("Chim nhặt ×N" in the fruit theme, §9). The side effects of a booster (the settle that follows a hammer cut, for example) count as cascade rounds too.
 
@@ -94,7 +98,7 @@ These are the load-bearing rules. Breaking any one of them breaks the game.
 
 ## 4. Board objects and HUD
 
-The screen is one portrait layout on a reference width of **360 logical units**, top to bottom: target slots, next strip, queue and vault, next-spawn dots, grid, booster bar, undo and restart. Cell size is 54 for a 6×6 grid and 48 for 7×7 (§5.1). The layout is a view decision; the engine does not depend on it. **[PROPOSED]** the Unity view uses a Canvas Scaler (or an orthographic camera) fitted to this reference width.
+The screen is one portrait layout on a reference width of **360 logical units**, top to bottom: target slots, next strip, queue and vault, next-spawn dots, grid, booster bar, undo and restart. Cell size is 54 for a 6×6 grid and 48 for 7×7 (§5.1). The layout is a view decision; the engine does not depend on it. **Built:** the board is drawn with sprites under an orthographic camera fitted to the grid width (`CameraFit`, margin 0.5 cell), and the HUD is a uGUI canvas with a Canvas Scaler at 360 × 640 matching width.
 
 | Object | Role |
 |---|---|
@@ -104,7 +108,7 @@ The screen is one portrait layout on a reference width of **360 logical units**,
 | **Vault** | Next to the queue. Shows the units stored by the Stash booster (§5.9) in **two separate rows of five**, filled left to right and then top to bottom; the label carries the full count, and a unit past the tenth is counted but not drawn |
 | **Next-spawn dots** | Two small blocks above each column: the next two colours that column will spawn (I5) |
 | **Grid** | 6×6 (Levels 1 and 2) or 7×7 (Level 3), per `LevelConfig`. Edge markers (red bars) show which rows and columns are locked |
-| **HUD** | Slide count and targets left |
+| **HUD** | Slide count and targets left (built so far: the slide count and a Restart button, with placeholder English text) |
 | **Booster bar** | Three buttons (§5.9). Each shows what it will do, or why it is off |
 | **Undo / Restart** | Two buttons under the grid. Both are disabled while a resolution is playing |
 | **Tutorial** | A short overlay with a highlight, shown at the start of the game and the first time a mechanic or booster appears (§5.8) |
@@ -120,6 +124,7 @@ Drag only. Press on a cell of the grid, move, release.
 - **Spring.** If the line contains a spring block, one notch moves 2 cells and the line follows the finger at the same ratio (the tutorial explains it the first time, §5.8). With an odd line length the shift is never zero unless the player slides a whole revolution.
 - **A drag that ends on notch 0** (or a multiple of the line length) snaps back in 140 ms and counts as nothing (I3).
 - Input is ignored while a resolution is playing, while a panel is open and after the run has ended.
+- **Built (Phase 1):** `DragInput` reads the classic Input Manager (a touch works through the simulated mouse), ignores a press over uGUI and while the view is busy, locks the axis after 8 logical units and rounds to the nearest notch on release. A refused move (zero shift) snaps the line back in 140 ms. Not built yet: the locked-line flash and the spring step (Phase 4).
 
 ### 4.2 Drag preview [BUILT in the prototypes]
 
@@ -157,6 +162,8 @@ The number in the header is the **net change of the queue after the whole chain*
 
 Colours are numbered 0–4 and the five items of a theme must also differ in **silhouette**, not only in hue, so the game is playable without colour vision (§9).
 
+**Limits.** `rows`, `cols` and `colors` are at least 3 (a shorter line cannot hold a match and the generator could not avoid one); `LevelData` refuses smaller values.
+
 **Targets.** A level is free to choose how many targets it has (the length of `sequence`) and the `cap` of each one, from `capMin` to `capMax` inclusive; a value outside that range is a data error and fails on load (I10). A target's `cap` stays with it when the strip is reordered (§5.9). A bigger `cap` means more units for the same target, so raise `queueMax` or `qOpenStart` with it only after checking the level.
 
 ### 5.2 Slide
@@ -168,6 +175,7 @@ k = (notches × step) mod length      step = 2 if the line contains a spring blo
 ```
 
 - `k = 0` is not a move (I3). Otherwise the slide is applied and the move counter goes up by one.
+- **Direction.** A positive `notches` moves a row to the right and a column down; a negative one moves it the other way. `k` uses a floor modulo, so a negative shift equals `length − |k|`.
 - A line is **locked** when it contains a chain block whose lock covers that axis (§5.6). A locked line cannot be slid.
 - A slide moves whatever is in the line, including chain blocks of another axis, sealed blocks and spring blocks.
 
@@ -209,10 +217,10 @@ There is **one** settler (`SandSettler`). In a level with no chain block it is e
 
 A settle repeats the following passes until nothing changes (a guard stops it after 500 passes):
 
-1. **Move pass.** Scan rows from the second-to-last row up to row 0 (so lower blocks move first). Inside a row the scan direction alternates from row to row. For every block that is **not chained**:
+1. **Move pass.** Scan rows from the second-to-last row up to row 0 (so lower blocks move first). Inside a row the scan direction alternates from row to row (with gravity only the direction does not change the result, so the engine adds the alternation together with the chain rule). For every block that is **not chained**:
    - if the cell below is empty: the block falls one cell;
    - otherwise, if the cell below holds a **chain block**, or the cell **beside it in the same row** (towards a free diagonal) holds a chain block, **and** the diagonal cell below on that side is empty: the block slides diagonally into it. Which side is tried first depends on `(row + column)`: odd tries left first, even tries right first. If both sides are possible only one is used.
-2. **Spawn pass.** Every empty cell in row 0 gets the next colour of its column's stream (I4). The new block starts one row above the grid (row −1, −2 … when several spawn in the same column during one settle).
+2. **Spawn pass.** Every empty cell in row 0 gets the next colour of its column's stream (I4). The new block starts above the grid: the *n*-th spawn in a column during one settle starts at row −*n* (−1, −2, −3 …). Earlier spawns have moved down by then, so the first spawn ends up lowest, exactly like ordinary gravity.
 
 Chain blocks never move during a settle, and a block that is not next to a chain behaves exactly like ordinary gravity (it only ever moves diagonally when a chain forces it to). A cell under a chain is filled from the side: the neighbouring column's block flows in diagonally, and the neighbouring column refills from the top, so the cell is never left empty (I9).
 
@@ -290,26 +298,29 @@ Three optional, consumable actions. They are **not moves** (the slide counter do
 
 ---
 
-## 6. Interfaces [PROPOSED]
+## 6. Interfaces
 
-No Unity code exists yet. This section is the contract the engine should expose; use these names unless a decision changes them. The engine is a **pure C# assembly** (`SlideJam.Engine`, "No Engine References" ticked) with no `MonoBehaviour`, `Time`, `UnityEngine.Random` or other Unity type. The `LevelConfig` / `GameConfig` ScriptableObjects live in the game assembly and are converted to plain data structs that the engine reads. The view only plays phases.
+The engine of Phase 0 and Phase 1 exists in `Assets/Scripts/Engine/` (rows listed as built after the table); the rest is **[PROPOSED]**. This section is the contract the engine exposes; use these names unless a decision changes them. The engine is a **pure C# assembly** (`SlideJam.Engine`, "No Engine References" ticked) with no `MonoBehaviour`, `Time`, `UnityEngine.Random` or other Unity type. The `LevelConfig` / `GameConfig` ScriptableObjects live in the game assembly and are converted to plain data structs that the engine reads. The view only plays phases.
 
 | Member | Purpose |
 |---|---|
-| `BoardState.New(LevelData)` | A new level state: grid, slots, queue, stream pointers, counters |
-| `MoveResolver.Move(state, axis, index, notches) → MoveResult` | Apply a slide to a **copy**; returns `{ Ok, State, Phases }`. `Ok` is false for a locked line, a zero shift or a finished run |
+| `BoardState.New(LevelData)` | A new level state: grid, stream pointers, counters (slots, queue, `Seq`, `Pre` and `Vault` are added with Phases 2 and 5) |
+| `MoveResolver.Move(state, axis, index, notches) → MoveResult` | Apply a slide to a **copy**; returns `{ Ok, State, Phases }`. `Ok` is false for a zero shift, a locked line or a finished run; a refused move returns the input state unchanged and no phases |
 | `MoveResolver.Preview(state, axis, index, notches) → Preview?` | The drag preview (§4.2): `{ Cells, ToQueue, Lose }`, or `null` when nothing matches. It calls `Move` on a copy |
+| `Board.Shift(grid, axis, index, k)` · `Board.ShiftAmount(notches, step, length)` · `Board.LineLength(level, axis)` · `Board.FloorMod` | The slide on a raw grid · `k = floorMod(notches × step, length)` · the length of a line |
 | `Board.LineLocked(state, axis, index)` | Whether a row or column can be slid (§5.2) |
 | `Board.LineCells(axis, index)` · `Board.StepOf(state, axis, index)` | The cells of a line · the cells moved per notch (1 or 2) |
 | `MoveResolver.Hammer(state, row, col) → MoveResult` | Booster §5.9. `Ok` is false for an empty cell or a finished run |
 | `MoveResolver.SwapInfo(state) → SwapChoice?` · `MoveResolver.SwapTarget(state) → MoveResult` | The choice Swap target would make (`Color`, `Count`, `Slot`, `StripIndex`) or `null` · apply it |
 | `MoveResolver.Stash(state) → MoveResult` | Booster §5.9. `Ok` is false for an empty queue |
-| `Matcher.Find(state)` | The matched cells with their colour |
-| `ColumnStream.At(seed, column, i)` | The *i*-th colour a column will spawn (used for the next-spawn dots) |
+| `Matcher.Find(grid) → List<Cell>` · `Matcher.HasMatch(grid)` | Every cell of every run of `Matcher.MinRun` (3) or more, each once, in row-major order |
+| `ColumnStream.At(seed, column, index, colors)` · `Mulberry32.At(seed, index)` | The colour of a column's `index`-th spawn (used for the next-spawn dots) · the raw stream value |
 | `BoardState.Clone()` | Deep copy used for snapshots and undo |
 | `BoardState.Hash()` | A stable hash of the whole state (including stream pointers) for determinism tests |
 
 The stream generator is `mulberry32` in `uint` arithmetic with wrap-around (`unchecked`), so one seed gives the same colours on every platform. No `float`, no `System.Random`.
+
+**Built so far (Phase 0 and 1):** every row above except `Preview`, `Hammer`, `SwapInfo`, `SwapTarget`, `Stash`, `LineLocked`, `LineCells` and `StepOf`. `Matcher` handles plain blocks only.
 
 ### 6.1 Phase list
 
@@ -323,20 +334,26 @@ The stream generator is `mulberry32` in `uint` arithmetic with wrap-around (`unc
 | `Pull` | `Flights` (units may come from the vault) |
 | `Swap` | `Slot`, `Color`, `From` (the displaced colour) |
 | `Stash` | `Flights` (queue to vault) |
-| `Fall` | `Start` (block id → start cell) |
+| `Fall` | `Starts`: a list of `FallStart {Id, From}` for every block that moved or spawned, in row-major order of its final cell (a list, so the order never depends on a dictionary). `From.Row` is negative for a block spawned above the grid |
 | `End` | — (the final state has `Over` = `Win` or `Lose`) |
+
+**Built so far (Phase 1):** `PhaseKind` is `Shift`, `Clear`, `Fall`; a move is `Shift` followed by a `Clear`, `Fall` pair per round. `Clear` carries `Round` and `MatchedCells` and only empties the cells (no units yet). The other kinds join at the end of the enum (append-only). `Phase` is one class with the fields of this table; fields that do not belong to its kind are empty.
 
 A **flight** is `{Color, From, To}` with `From` a cell, a queue index or a vault index (`{V}`) and `To` one of `{Slot, Pip}`, `{Q}` (queue chair), `Vault` or `Vanish`.
 
-**State shape.** `Grid[r, c]` is `null` or a block `{Id, Kind (Normal | Dual), Color | Colors, X2, Spring, Chain, Seal}`; `Slots[i]` is `null` or `{Color, Count, Cap, Locked}`; the rest is `Queue`, `Vault`, `QOpen`, `Seq` (entries `{Color, Cap}`), `Pre`, `SeqI`, `Ptr[]`, `Moves`, `Done`, `Over`, `NextId`. `LevelData` carries `QMax`, `QOpen`, `QGrow`, `LockedSlot`, `Seq` and the special blocks; `SwapMin` comes from `GameConfig`.
+**State shape.** `Grid[r, c]` is a `Block` struct `{Id, Kind (Normal | Dual), Color | Colors, X2, Spring, Chain, Seal}` (Phase 1 has `Id` and `Color` only); an empty cell is `Id == 0` and real ids start at 1; `Slots[i]` is `null` or `{Color, Count, Cap, Locked}`; the rest is `Queue`, `Vault`, `QOpen`, `Seq` (entries `{Color, Cap}`), `Pre`, `SeqI`, `Ptr[]`, `Moves`, `Done`, `Over`, `NextId`. `LevelData` carries `QMax`, `QOpen`, `QGrow`, `LockedSlot`, `Seq` and the special blocks; `SwapMin` comes from `GameConfig`.
 
 ### 6.2 Proposed project layout
 
 ```
-Assets/Scripts/Engine/   assembly SlideJam.Engine: BoardState, MoveResolver, SandSettler, ColumnStream, Matcher
-Assets/Scripts/Game/     assembly SlideJam.Game: BoardView, DragInput, PhasePlayer, HUD, config ScriptableObjects
+Assets/Scripts/Engine/   assembly SlideJam.Engine
+  Rng/                   Mulberry32, ColumnStream
+  Board/                 Block, Axis, Cell, LevelData, BoardState, Board, Matcher, GridGenerator, SandSettler
+  Moves/                 PhaseKind, Phase, FallStart, MoveResult, MoveResolver
+Assets/Scripts/Game/     assembly SlideJam.Game: GameController (the one wired root), BoardView, BlockView, DragInput, PhasePlayer, HudView, CameraFit, config ScriptableObjects
+Assets/Prefabs/          Block.prefab (the pooled block view)
 Assets/Design/           GameConfig.asset, Levels/LevelConfig_*.asset
-Assets/Tests/EditMode/   rules, invariants, determinism
+Assets/Tests/EditMode/   assembly SlideJam.Tests.EditMode (Rng/, Board/, Moves/): rules, invariants, determinism
 Assets/Tests/PlayMode/   a real drag against the engine's prediction
 ```
 
@@ -344,16 +361,16 @@ Assets/Tests/PlayMode/   a real drag against the engine's prediction
 
 ## 7. Implementation notes
 
-- **Animation [PROPOSED].** The view plays the phase list one phase at a time and does not decide anything. Starting timings from the prototypes: match pulse 170 ms, a unit's flight 360 ms plus 38–40 ms stagger per unit, slot pop and slot enter 260 ms each, settle `160 + 90 × longest distance` ms, drag snap 130 ms, floating labels 900 ms. They belong in `GameConfig` (I10).
+- **Animation [BUILT for Shift, Clear and Fall].** The view plays the phase list one phase at a time and does not decide anything. Starting timings from the prototypes: match pulse 170 ms, a unit's flight 360 ms plus 38–40 ms stagger per unit, slot pop and slot enter 260 ms each, settle `160 + 90 × longest distance` ms, drag snap 130 ms, floating labels 900 ms. They are serialized fields on `PhasePlayer` for now and belong in `GameConfig` (I10). `Clear` is a scale pulse of the matched blocks (1.15 at the middle, 0 at the end); `Fall` moves each block of `Starts` from its start cell, with a smooth-step curve. After the last phase `BoardView.Matches` checks the screen against the state and `ShowState` redraws it.
 - **Targets and queue during a flight.** While units fly, the slots and the queue are drawn from the state *before* the phase, and the new state appears when the flight ends, so a pip fills when its block lands, not when it leaves.
-- **Input [PROPOSED].** One pointer path for mouse and touch using the classic Input Manager (`Input.GetMouseButton*` / `Input.touches`); the Input System package is not installed. Input is ignored while a phase list is playing (I8).
+- **Input [BUILT].** One pointer path for mouse and touch using the classic Input Manager (`Input.GetMouseButton*` / `Input.touches`); the Input System package is not installed. Input is ignored while a phase list is playing (I8).
 - **Preview cost.** The preview runs a full resolution on a copy at every pointer move. It is small on 7×7. Cache it per notch count if it shows up in a profile.
 - **Tests [PROPOSED].** Edit Mode (Unity Test Framework): a rule test per mechanic, the invariants (I4 same seed and moves give the same `Hash()`, I5 preview equals result, I9 no hole after a non-terminal move), a direct sand-flow test (a chain block stays put and the cells under it are refilled), a cap test (targets of 3, 4 and 5 units complete at exactly their own `cap`), a booster test (after any booster use: no hole, the multiset of `Seq` unchanged, `(Seq.Length − SeqI) + open slots = total − Done`, no stream pointer moved, no unit added to the queue, undo restores the board state exactly and does not refund the use). Play Mode: a real drag on the board compared with the engine's prediction for the same move, including a spring line.
 - **Determinism.** Snapshots are value copies of `BoardState`, so undo restores the stream pointers and a replay of the move list is exact (I4). Do not use `Dictionary` or `HashSet` iteration order, or `float` maths, in anything that decides a rule.
 
 **Hazards — standing conventions**
 
-- **Streams are memoised.** `ColumnStream.At` extends a per-column list on demand and is a pure function of the seed, so it is safe to call from the view for the next-spawn dots. Key any cache by seed and keep it out of static state that survives between levels or tests. Do not advance a stream from anywhere but a spawn (I4).
+- **Streams are stateless.** `Mulberry32.At` and `ColumnStream.At` are pure functions of the seed, the column and the index (a closed form: no list, no cache), so they are safe to call from the view for the next-spawn dots. The only stream state is `Ptr[]` in the board state; do not advance it from anywhere but a spawn (I4).
 - **Spring and line length.** With an even line length, a spring's step of 2 reaches `k = 0` at half a revolution and the move is refused as a zero shift. Level 3 has length 7 (odd) so it does not happen. Keep spring lines odd or handle it.
 - **Row and column chains vs gravity.** A `row` or `col` chain block is carried by slides along its free axis but is immovable for the settle. Do not treat "locked" and "immovable" as the same thing.
 - **Holes.** A loss is reported before the final settle, so a lost state may contain empty cells. Do not run the grid-full assertion on a lost state (I9).
@@ -361,6 +378,7 @@ Assets/Tests/PlayMode/   a real drag against the engine's prediction
 - **Booster ties.** `SwapInfo` must break ties by the fixed order in §5.9, never by dictionary or set iteration order (I4).
 - **`Seq` and `Pre` move together.** A swap that splices one without the other desynchronises the next strip. The vault is **not** counted in the overflow check.
 - **`cap` is per target.** A constant 3 for the units of a target anywhere in the engine or the view is a bug (I10); read the slot's own `Cap`.
+- **Guards.** The settle stops with an error after 500 passes and a resolution after 500 rounds (`MaxRounds`). Both guard against a bug and are not rules.
 - **Negative modulo.** In C#, `%` of a negative number is negative. Use a floor-mod for the shift `k` and for wrap-around.
 
 ---
