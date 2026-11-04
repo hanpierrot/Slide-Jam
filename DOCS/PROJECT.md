@@ -6,9 +6,9 @@
 
 | Snapshot | Value |
 |---|---|
-| Last verified against the repository | **2026-11-03**, static read of `main` @ `f566452` ("Init project") plus uncommitted edits to the three manual files and `ProjectSettings.asset` (orientation set to Portrait). Nothing was compiled or run: the Unity Editor was not driven in this pass |
-| State of the game | **No game code, no config asset, no art and no audio exist yet.** `Assets/` holds only `SampleScene.unity` and empty folders. Everything in §6–§8 and §10 is the **plan**, not a description of code |
-| Branch / commit | `main` @ `f566452`; remote `https://github.com/hanpierrot/Slide-Jam.git`; the manual files and the Portrait setting are uncommitted |
+| Last verified against the repository | **2026-11-04**, static read of branch `BoardCore` @ `6bfb37b` (Phase 0: Setup) plus uncommitted Phase 1 engine files and doc edits. Nothing was compiled or run by the agent: the Edit Mode tests are written but **not yet run** |
+| State of the game | **The engine of Phase 0 and 1 is written** (random, board, slide, match, settle, `MoveResolver.Move`, 33 Edit Mode tests). There is no view, no slot or queue, no config asset, no art and no audio. §6 lists what exists and what is planned |
+| Branch / commit | `BoardCore` @ `6bfb37b`; `main` @ `f566452`; remote `https://github.com/hanpierrot/Slide-Jam.git`; the Phase 1 files and the doc edits are uncommitted |
 | Engine | Unity **2022.3.62f3** (LTS), 2D template, built-in render pipeline, single scene |
 | Design spec | `DOCS/DESIGN.md` **v0.4** (2026-11-03) is the source of truth for rules, numbers and interfaces. This file records the **project state**: setup, code map, decisions, issues and what is built |
 | Prototype | A throwaway HTML prototype (three levels, three boosters, a fruit-garden skin) produced the rules. It is **not in this repository** and nothing here depends on it |
@@ -28,7 +28,7 @@ Paths are relative to the repository root. Line numbers drift, so search by symb
 3. [Coding conventions](#3-coding-conventions)
 4. [Team, ownership and workflow](#4-team-ownership-and-workflow)
 5. [Project setup](#5-project-setup)
-6. [Code map (planned)](#6-code-map-planned)
+6. [Code map](#6-code-map)
 7. [Game flow and persistence (planned)](#7-game-flow-and-persistence-planned)
 8. [Input, UI and tutorial (planned)](#8-input-ui-and-tutorial-planned)
 9. [Content status: levels, boosters, theme](#9-content-status-levels-boosters-theme)
@@ -62,13 +62,13 @@ The invariants are **[LOCKED]** and worded in `DESIGN.md` §2. Do not copy the w
 |---|---|---|
 | I1 | One win, one loss | not built |
 | I2 | Turn-based | not built |
-| I3 | One core verb; boosters are not moves | not built |
-| I4 | Deterministic (seeded column streams, no hidden randomness) | not built |
+| I3 | One core verb; boosters are not moves | slide is one move and a zero shift is refused (test, not yet run); boosters not built |
+| I4 | Deterministic (seeded column streams, no hidden randomness) | partly: streams, grid generation and `Move` are pure and tested through `Hash()` (tests not yet run); undo and replays not built |
 | I5 | No lies (next-spawn dots and preview are real) | not built |
 | I6 | Combos never punish (cascade surplus vanishes) | not built |
 | I7 | Locks close a door, never end the run | not built |
-| I8 | Resolution is atomic | not built |
-| I9 | Board full after settle | not built |
+| I8 | Resolution is atomic | partly: `Move` returns the whole phase list at once; there is no view yet |
+| I9 | Board full after settle | tested after every `Move` in the sweep tests (not yet run); the chain case is Phase 4 |
 | I10 | Tuning in data | not built |
 | I11 | Every shipped level is solvable | not built; the way to check it is **OPEN** (§12) |
 
@@ -124,11 +124,11 @@ The conventions that bind every change are in `AGENTS.md` §1 and §6. Summary o
 | Built-in modules | the default 2D template set (physics, physics2d, audio, ui, particlesystem, ...) | `physics` / `physics2d` are not needed by the rules |
 
 - **Not installed:** the Input System package (the project uses the classic Input Manager, `activeInputHandler: 0`), URP, DOTween, any Unity AI or MCP package. The engine must not depend on any of them. Adding one is a package change: ask first.
-- No `.asmdef` files yet. The planned assemblies are in §6.
+- Assemblies: `SlideJam.Engine` (No Engine References, not auto-referenced) and `SlideJam.Tests.EditMode`. `SlideJam.Game` and the PlayMode tests are planned (§6).
 
 ### 5.2 Repository
 
-- Remote: `https://github.com/hanpierrot/Slide-Jam.git`. Branches: `main` only. One commit: `f566452 Init project`.
+- Remote: `https://github.com/hanpierrot/Slide-Jam.git`. Branches: `main` and local `BoardCore`. Commits: `f566452 Init project` (`main`), `6bfb37b Phase 0: Setup` (`BoardCore`).
 - `.gitattributes`: Git LFS rules for images, audio, video, fonts and archives (74 `lfs` lines); Unity YAML files use `merge=unityyamlmerge eol=lf`. `.gitignore` is the standard Unity one.
 - **The `unityyamlmerge` merge driver is not defined in this clone's git config** (`git config --get merge.unityyamlmerge.driver` prints nothing). Unless it is set in a global gitconfig, the `.gitattributes` rule falls back to a text merge. Set it up before the first scene or prefab merge. **OPEN** (§12).
 - Agent instructions: `AGENTS.md` (all agents), `CLAUDE.md` (Claude; imports `AGENTS.md`). There is no `.claude/` folder yet.
@@ -139,7 +139,9 @@ The conventions that bind every change are in `AGENTS.md` §1 and §6. Summary o
 | Path | Contents today |
 |---|---|
 | `Assets/Scenes/SampleScene.unity` | the only scene, in the build list (index 0) |
-| `Assets/Art/`, `Audio/`, `Design/`, `Resources/`, `Scripts/` | empty (only `.meta` files) |
+| `Assets/Art/`, `Audio/`, `Design/`, `Resources/` | empty (only `.meta` files) |
+| `Assets/Scripts/Engine/` | assembly `SlideJam.Engine`: `Rng/`, `Board/`, `Moves/` (§6) |
+| `Assets/Tests/EditMode/` | assembly `SlideJam.Tests.EditMode`: `Rng/`, `Board/`, `Moves/` (§11) |
 
 Planned layout (names may change; update §6 when they do):
 
@@ -175,15 +177,18 @@ Camera and light only, no game objects. **Planned** (not built): a `MANAGERS` ro
 
 ---
 
-## 6. Code map (planned)
+## 6. Code map
 
-There is no code. This is the intended map, taken from `DESIGN.md` §6; replace it with the real one as files appear.
+What exists is marked [built]; the rest is the plan from `DESIGN.md` §6. Update this table as files appear.
 
 | Area | Planned contents |
 |---|---|
-| Engine (`SlideJam.Engine`, "No Engine References") | `BoardState` (state, `Clone`, `Hash`), `MoveResolver` (`Move`, `Preview`, `Hammer`, `SwapInfo`, `SwapTarget`, `Stash`), `SandSettler`, `ColumnStream`, `Matcher`, `Board` (line helpers), phase and flight types, `LevelData` |
+| Engine `Rng/` [built] | `Mulberry32` (`At`, closed form), `ColumnStream` (`At`) |
+| Engine `Board/` [built] | `Block`, `Axis`, `Cell`, `LevelData`, `BoardState` (`New`, `Clone`, `Hash`), `Board` (`Shift`, `ShiftAmount`, `LineLength`, `FloorMod`), `Matcher` (`Find`, `HasMatch`), `GridGenerator` and `SandSettler` (both internal; `SandSettler` is gravity only) |
+| Engine `Moves/` [built] | `MoveResolver.Move`, `MoveResult`, `Phase`, `PhaseKind` (`Shift`, `Clear`, `Fall`), `FallStart` |
+| Engine [planned] | slots, queue, `Seq` / `Pre` / `Vault`, complete / pull / overflow / win and undo (Phase 2), `Preview` (Phase 3), dual / ×2 / locked slot / `qGrow` / spring / sealed / chain with sand flow (Phase 4), `Hammer`, `SwapTarget`, `Stash` (Phase 5) |
 | Game (`SlideJam.Game`) | `BoardView`, `DragInput`, `PhasePlayer` (animation), `HUD`, `BoosterBar`, `TutorialOverlay`, `TextTable` (display names), `SaveData` (tutorial-seen flags, booster counts), the `GameConfig` and `LevelConfig` ScriptableObjects and their conversion to engine data |
-| Tests | Edit Mode: per-mechanic rules, invariants, determinism, caps, boosters. Play Mode: real drag vs engine prediction |
+| Tests [Edit Mode built] | `Rng/Mulberry32Tests`, `Board/MatcherTests`, `Board/BoardTests`, `Board/BoardStateTests` (+ the `TestGrids` helper), `Moves/MoveResolverTests`. Planned: caps, boosters, per-mechanic rules; Play Mode: real drag vs engine prediction |
 
 Singletons and services are **not decided**. Prefer plain objects owned by one game controller over `static` singletons; any static must be reset on scene load.
 
@@ -236,7 +241,7 @@ A `cap` outside `capMin..capMax` is a data error and must fail on load.
 
 | Tool | Where | Use |
 |---|---|---|
-| Unity Test Framework 1.1.33 | `Assets/Tests/EditMode`, `Assets/Tests/PlayMode` (none yet); Window > General > Test Runner | the engine is pure C#, so rule and invariant tests run in Edit Mode |
+| Unity Test Framework 1.1.33 | `Assets/Tests/EditMode` (33 tests written, not yet run), `Assets/Tests/PlayMode` (none yet); Window > General > Test Runner | the engine is pure C#, so rule and invariant tests run in Edit Mode |
 | Batch mode | see `AGENTS.md` §6 | `Unity.exe -batchmode -nographics -projectPath . -runTests -testPlatform EditMode ...`; the Editor must be closed |
 | Unity CLI / MCP | whatever the session provides | inspect scenes, prefabs and the Console; refresh and wait for the recompile after script edits |
 
@@ -244,6 +249,7 @@ Testing approach:
 
 - Put every rule in the pure engine and test it headless. Tests read numbers from configs and do not pin balance values.
 - Planned invariant tests: same seed and moves give the same `Hash()` (I4); preview equals result (I5); no hole after a non-terminal move (I9, not on a lost state); a target of `cap` 3, 4 and 5 completes at exactly its own `cap`; after any booster use: no hole, the multiset of `Seq` unchanged, `(Seq.Length − SeqI) + open slots = total − Done`, no stream pointer moved, no unit added to the queue, undo restores the board and does not refund the use.
+- Written so far (Edit Mode): the closed-form generator against a stepwise reference; matcher runs; slide wrap, direction and floor-mod; grid generation (full, unique ids, never a match over 60 seeds and two sizes); `Clone` independence and `Hash`; `Move` (zero shift refused, input not mutated, two hand-calculated scenarios, full and match-free board after every move, spawns equal clears, round numbering, determinism, same result after "undo").
 - No bot and no solver exist. How solvability is checked (I11) is **OPEN** (§12).
 - There is no player playtest data. Any difficulty claim must be labelled arithmetic, simulation or observed run.
 
@@ -264,6 +270,7 @@ Only genuine defects and undecided questions live here. When you fix one, move i
 | Q7 | Low | Linear colour space and scripting backend not reviewed for mobile | Project Settings | review at the first device build |
 | Q8 | Low | Ownership of areas is not recorded (§4) | this file | ask the team |
 | Q9 | Low | `DESIGN.md` §1 says "about 20–40 slides" per level as a design target; nothing has measured it on the Unity engine | `DESIGN.md` | re-state when levels exist |
+| Q10 | Low | The Phase 0 plan had `Assets/Tests/EditMode/Rng/ColumnStreamTests.cs` (5 tests); it is not in the repository, so `ColumnStream` is only covered through the grid and `Move` tests. `Mulberry32Tests` has no golden values from the prototype | `Assets/Tests/EditMode/Rng/` | add the file; add golden values if the prototype is found |
 
 ---
 
@@ -279,7 +286,7 @@ Only genuine defects and undecided questions live here. When you fix one, move i
 
 Nothing is built. Suggested order, following `CLAUDE.md` §5 (engine first, then view, then data, then docs). **Treat as a proposal; the team sets priorities.**
 
-1. **Engine core:** `BoardState`, `ColumnStream` (`mulberry32`), `Matcher`, shift, clear, complete, pull, overflow and win checks, `SandSettler`. Edit Mode tests for I4, I9 and the cap rule.
+1. **Engine core:** [Phase 0 and 1 written, tests not yet run] `BoardState`, `ColumnStream`, `Matcher`, shift, clear, `SandSettler`, `Move`. [Phase 2] complete, pull, overflow and win checks, the cap rule and undo. The Phase 1 view (grid, drag, phase player) is not started.
 2. **Mechanics:** ×2, dual, locked slot, growing queue, then chain, sealed block, spring, with a test each (I7 exits).
 3. **Boosters:** Hammer, Swap target, Stash with `Seq` / `Pre` / `Vault` in the snapshot, and the booster invariant tests.
 4. **Preview and undo** on the engine side.
@@ -307,6 +314,12 @@ Condensed; newest last. The rule decisions behind the prototype are in `DESIGN.m
 | S8 | 2026-11-03 | Hints replaced by a tutorial shown once per step and stored in save data | final |
 | S9 | 2026-11-03 | Fruit set: strawberry, blueberry, pear, orange, plum; theme is display only | final; art not in repo (Q3) |
 | S10 | 2026-11-03 | Balance tables and level data removed from `DESIGN.md` | final; consequences in Q1, Q2 |
+| S11 | 2026-11-04 | The starting grid is rolled from the separate stream "column −1", row by row, re-rolling a cell that would complete a run of 3 | final |
+| S12 | 2026-11-04 | Colour of a stream value is `(value × colors) >> 32` | final; not compared with the prototype, so seeds may give different levels |
+| S13 | 2026-11-04 | Positive `notches` moves a row right and a column down | final |
+| S14 | 2026-11-04 | An empty cell is a `Block` with `Id == 0`; real ids start at 1 | final |
+| S15 | 2026-11-04 | `Fall` reports `Starts` as an ordered `FallStart` list; guards `MaxRounds` and 500 settle passes throw | final |
+| S16 | 2026-11-04 | The stream generator is stateless (closed form), so no cache and no shared state | final |
 
 ---
 
@@ -319,6 +332,7 @@ Everything in this file marked `[verified]` was read from a file. Not checked:
 | The project opens and compiles in Unity 2022.3.62f3 with the current packages | open in the Editor; read the Console |
 | The Portrait setting survived (the Editor was open when the file was edited and may rewrite it) | Project Settings > Player > Resolution and Presentation |
 | `unityyamlmerge` availability | `git config --get merge.unityyamlmerge.driver` and the Unity install's `UnityYAMLMerge` |
+| The 33 Edit Mode tests compile and pass, including the two hand-calculated `Move` scenarios | Test Runner > EditMode > Run All |
 | LFS is installed and the rules match the planned art / audio | `git lfs env` |
 
 ---
@@ -347,6 +361,7 @@ Run this before every commit. If a box applies, update that section **in the sam
 | Date | Change |
 |---|---|
 | 2026-11-03 | First version. Written from `DESIGN.md` v0.4, the repository at `f566452`, `Packages/manifest.json` and `ProjectSettings/`; structure adapted from another project's `PROJECT.md`. Records that no game code exists yet |
+| 2026-11-04 | Phase 0 and 1 engine recorded: §2 statuses, §5, §6 code map, §11 tests, §12 Q10, §14, decisions S11–S16. Written from the files in the repository at `BoardCore`; nothing was run |
 
 ---
 
