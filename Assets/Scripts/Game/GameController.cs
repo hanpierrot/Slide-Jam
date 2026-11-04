@@ -1,6 +1,4 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using SlideJam.Engine;
 using UnityEngine;
 
@@ -11,6 +9,8 @@ namespace SlideJam.Game
         [SerializeField] private BoardView _boardView;
         [SerializeField] private CameraFit _cameraFit;
         [SerializeField] private PhasePlayer _phasePlayer;
+        [SerializeField] private DragInput _dragInput;
+        [SerializeField] private HudView _hudView;
         
         // Temporary level data; moves into a LevelConfig asset in Phase 2
         [SerializeField] private int _rows = 6;
@@ -23,25 +23,48 @@ namespace SlideJam.Game
         
         public BoardState State { get; private set; }
         public bool IsBusy { get; private set; }
-        public event Action StateChanged;
+
+        private void Awake()
+        {
+            _phasePlayer.Init(_boardView);
+            _dragInput.Init(_boardView, _cameraFit.Cam);
+            _dragInput.Dragging += OnDragging;
+            _dragInput.Released += OnReleased;
+        }
 
         private void Start()
         {
             Restart();
         }
+
+        private void OnDestroy()
+        {
+            if (_dragInput == null) return;
+
+            _dragInput.Dragging -= OnDragging;
+            _dragInput.Released -= OnReleased;
+        }
         
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (_boardView != null) _boardView.SetPreviewSize(_rows, _cols);
+            if (_cameraFit != null) _cameraFit.SetPreviewSize(_cols, _rows);
+        }
+#endif
+
         public void Restart()
         {
             if (_run != null) StopCoroutine(_run);
             _run = null;
-            IsBusy = false;
+            SetBusy(false);
 
             var level = new LevelData(_rows, _cols, _colors, (uint)_seed);
             State = BoardState.New(level);
             _boardView.Build(level);
             _cameraFit.Fit(_cols, _rows);
             _boardView.ShowState(State);
-            StateChanged?.Invoke();
+            _hudView.ShowMoves(State.Moves);
         }
         
         public bool TryMove(Axis axis, int index, int notches, float startOffset)
@@ -64,20 +87,36 @@ namespace SlideJam.Game
             }
 
             State = result.State;
-            StateChanged?.Invoke();
+            _hudView.ShowMoves(State.Moves);
             _run = StartCoroutine(Run(_phasePlayer.PlayMove(before, result, axis, index, startOffset, notches)));
             return true;
         }
         
+        private void OnDragging(LineDrag drag)
+        {
+            _boardView.ShowLineOffset(State, drag.Axis, drag.Index, drag.Offset);
+        }
+
+        private void OnReleased(LineDrag drag)
+        {
+            TryMove(drag.Axis, drag.Index, drag.Notches, drag.Offset);
+        }
+
+        private void SetBusy(bool busy) 
+        {
+            IsBusy = busy;
+            _dragInput.enabled = !busy;
+        }
+        
         private IEnumerator Run(IEnumerator routine)
         {
-            IsBusy = true;
+            SetBusy(true);
             yield return routine;
 
             if (!_boardView.Matches(State)) Debug.LogError("The board on screen differs from the state after the move.");
 
             _boardView.ShowState(State);
-            IsBusy = false;
+            SetBusy(false);
             _run = null;
         }
     }

@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using SlideJam.Engine;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -10,10 +8,7 @@ namespace SlideJam.Game
     public class DragInput : MonoBehaviour
     {
         private const float ReferenceWidth = 360f;
-
-        [SerializeField] private GameController _controller;
-        [SerializeField] private BoardView _boardView;
-        [SerializeField] private Camera _camera;
+        
         [SerializeField] private float _lockDistance = 8f;
         
         private enum DragState
@@ -23,6 +18,8 @@ namespace SlideJam.Game
             Dragging,
         }
         
+        private BoardView _boardView;
+        private Camera _camera;
         private DragState _state;
         private Vector2 _pressLocal;
         private int _row;
@@ -30,14 +27,25 @@ namespace SlideJam.Game
         private Axis _axis;
         private int _index;
         private float _offset;
+        
+        public event Action<LineDrag> Dragging;
+        public event Action<LineDrag> Released; 
 
-        private void Awake()
+        public void Init(BoardView boardView, Camera camera)
         {
-            if (_camera == null) _camera = Camera.main;
+            _boardView = boardView;
+            _camera = camera;
+        }
+        
+        private void OnDisable()
+        {
+            _state = DragState.Idle;
         }
 
         private void Update()
         {
+            if (_boardView == null) return;
+
             if (Input.GetMouseButtonDown(0)) OnPress();
             else if (Input.GetMouseButton(0)) OnHold();
 
@@ -46,7 +54,7 @@ namespace SlideJam.Game
         
         private void OnPress()
         {
-            if (_controller.IsBusy || PointerOverUi()) return;
+            if (PointerOverUi()) return;
 
             Vector3 world = PointerWorld();
             if (!_boardView.TryGetCell(world, out _row, out _col)) return;
@@ -70,14 +78,14 @@ namespace SlideJam.Game
             }
 
             _offset = _axis == Axis.Row ? delta.x : -delta.y;
-            _boardView.ShowLineOffset(_controller.State, _axis, _index, _offset);
+            Dragging?.Invoke(new LineDrag(_axis, _index, _offset));
         }
 
         private void OnRelease()
         {
             if (_state == DragState.Dragging)
             {
-                _controller.TryMove(_axis, _index, Mathf.RoundToInt(_offset), _offset);
+                Released?.Invoke(new LineDrag(_axis, _index, _offset));
             }
 
             _state = DragState.Idle;

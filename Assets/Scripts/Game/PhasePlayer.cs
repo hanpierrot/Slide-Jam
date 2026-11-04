@@ -7,7 +7,7 @@ namespace SlideJam.Game
 {
     public class PhasePlayer : MonoBehaviour
     {
-        [SerializeField] private BoardView _boardView;
+        private BoardView _boardView;
         
         // Starting timings from DESIGN 7; they move into GameConfig (I10)
         [SerializeField] private float _snapSeconds = 0.13f;
@@ -17,6 +17,11 @@ namespace SlideJam.Game
         [SerializeField] private float _fallBaseSeconds = 0.16f;
         [SerializeField] private float _fallPerCellSeconds = 0.09f;
 
+        public void Init(BoardView boardView)
+        {
+            _boardView = boardView;
+        }
+        
         public IEnumerator PlayMove(BoardState before, MoveResult result, Axis axis, int index,
             float startOffset, int notches)
         {
@@ -69,14 +74,13 @@ namespace SlideJam.Game
                 }
             }
 
-            float baseScale = _boardView.BlockScale;
             for (float t = 0f; t < _clearSeconds; t += Time.deltaTime)
             {
                 float k = t / _clearSeconds;
                 float factor = k < 0.5f
                     ? Mathf.Lerp(1f, _pulseScale, k * 2f)
                     : Mathf.Lerp(_pulseScale, 0f, (k - 0.5f) * 2f);
-                foreach (BlockView view in matched) view.transform.localScale = Vector3.one * (baseScale * factor);
+                foreach (BlockView view in matched) view.SetScaleFactor(factor);
                 yield return null;
             }
 

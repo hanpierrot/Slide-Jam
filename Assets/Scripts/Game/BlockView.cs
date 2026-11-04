@@ -9,20 +9,30 @@ namespace SlideJam.Game
     public class BlockView : MonoBehaviour
     {
         private SpriteRenderer _spriteRenderer;
+        private Vector3 _restScale;
         
         public int Id { get; private set; }
 
         private void Awake()
         {
             _spriteRenderer = GetComponent<SpriteRenderer>();
-            _spriteRenderer.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
+            _restScale = transform.localScale;
         }
 
-        public void Bind(int id, Sprite sprite, Color color)
+        public void Bind(int id, Color color)
         {
             Id = id;
-            _spriteRenderer.sprite = sprite;
             _spriteRenderer.color = color;
+        }
+        
+        public void SetScaleFactor(float factor)
+        {
+            transform.localScale = _restScale * factor;
+        }
+
+        public void ResetScale()
+        {
+            transform.localScale = _restScale;
         }
     }
 }

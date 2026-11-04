@@ -6,8 +6,8 @@
 
 | Snapshot | Value |
 |---|---|
-| Last verified against the repository | **2026-11-04**, static read of branch `BoardCore` @ `706d99c` (Phase 1 - Engine done) plus uncommitted work: the view (`Assets/Scripts/Game/`), `SampleScene.unity`, the placeholder sprite, TMP Essentials and the doc edits. The scene wiring below was read from the scene file. The user ran the 38 Edit Mode tests and the view in Play mode and reported no errors (told in chat; no result file; the agent did not run Unity) |
-| State of the game | **Engine of Phase 0 and 1 done, and the Phase 1 view built:** a drag slides a line, `Move` runs, the phases play with animation (snap, `Clear` pulse, `Fall`), and a move counter and a Restart button exist. Still no slot, queue, win or loss, config asset, art or audio. §6 lists what exists and what is planned |
+| Last verified against the repository | **2026-11-04**, static read of branch `BoardCore` @ `706d99c` (Phase 1 - Engine done) plus uncommitted work. Read from the repository: the view scripts up to the composition-root change (`GameController` wires `DragInput`, `HudView`, `PhasePlayer`, `CameraFit`) and the scene file. **Recorded from delivered code, not yet read in the repository and not yet run:** the `Block` prefab, `BlockPool` in `BoardView` with its pre-made blocks, and the scene objects `Background`, `Mask`, `Blocks` (§16). The user ran the 38 Edit Mode tests and the view through the composition-root change in Play mode and reported no errors (told in chat; no result file; the agent did not run Unity) |
+| State of the game | **Engine of Phase 0 and 1 done, and the Phase 1 view built:** a drag slides a line, `Move` runs, the phases play with animation (snap, `Clear` pulse, `Fall`), and a move counter and a Restart button exist. `GameController` is the one wired root; the camera refits when the screen changes shape. Still no slot, queue, win or loss, config asset, art or audio. §6 lists what exists and what is planned |
 | Branch / commit | `BoardCore` @ `706d99c`; `main` @ `f566452`; remote `https://github.com/hanpierrot/Slide-Jam.git`. Uncommitted: the view scripts, `SampleScene.unity`, `Assets/Art/Sprites/Square.png`, `Assets/TextMesh Pro/`, `ProjectSettings/SceneTemplateSettings.json`, the docs |
 | Engine | Unity **2022.3.62f3** (LTS), 2D template, built-in render pipeline, single scene |
 | Design spec | `DOCS/DESIGN.md` **v0.4** (2026-11-03) is the source of truth for rules, numbers and interfaces. This file records the **project state**: setup, code map, decisions, issues and what is built |
@@ -67,7 +67,7 @@ The invariants are **[LOCKED]** and worded in `DESIGN.md` §2. Do not copy the w
 | I5 | No lies (next-spawn dots and preview are real) | not built |
 | I6 | Combos never punish (cascade surplus vanishes) | not built |
 | I7 | Locks close a door, never end the run | not built |
-| I8 | Resolution is atomic | partly: `Move` returns the whole phase list at once and the view ignores input while it plays (`IsBusy`); slots, win and loss do not exist yet |
+| I8 | Resolution is atomic | partly: `Move` returns the whole phase list at once and the view ignores input while it plays (the controller disables `DragInput`); slots, win and loss do not exist yet |
 | I9 | Board full after settle | tested after every `Move` in the sweep tests; the chain case is Phase 4 |
 | I10 | Tuning in data | not built |
 | I11 | Every shipped level is solvable | not built; the way to check it is **OPEN** (§12) |
@@ -93,6 +93,7 @@ The conventions that bind every change are in `AGENTS.md` §1 and §6. Summary o
 | Compare Unity objects with explicit `!= null`, never `?.` / `??` | Unity's fake-null on destroyed objects |
 | Rename a serialized field only with `[FormerlySerializedAs("old")]` | Keeps asset values |
 | Build new things as **prefabs**; keep `SampleScene.unity` edits minimal | Single shared scene means merge conflicts |
+| Wire scene references **only on `GameController`** (the composition root); the other view components receive their dependencies through `Init` and report through events, and never reference the controller | Cross-references between components on one GameObject made the setup confusing; one place to wire means one place to check |
 | Commit every `.meta` with its asset; do not hand-edit scene / prefab / asset YAML | GUID references |
 
 ---
@@ -140,6 +141,8 @@ The conventions that bind every change are in `AGENTS.md` §1 and §6. Summary o
 |---|---|
 | `Assets/Scenes/SampleScene.unity` | the only scene, in the build list (index 0) |
 | `Assets/Art/Sprites/Square.png` | the placeholder sprite used for blocks, the board background and the mask (from *Create > 2D > Sprites > Square*) |
+| `Assets/Prefabs/Block.prefab` | the block view: a `SpriteRenderer` (the `Square` sprite, Mask Interaction Visible Inside Mask) and `BlockView`, scale 0.92. Its pre-made, inactive copies sit under `Board/Blocks` in the scene **[recorded from delivered setup steps; not yet read in the repository]** |
+| `Assets/Prefabs/Board.prefab` | the board root made by the user: `Board` (`BoardView`) with `Background`, `Mask` and `Blocks`; the scene holds one instance of it, with the preview size and the pre-made blocks as scene overrides |
 | `Assets/Audio/`, `Design/`, `Resources/` | empty (only `.meta` files) |
 | `Assets/TextMesh Pro/` | TMP Essentials, imported when the first TMP object was created |
 | `Assets/Scripts/Game/` | assembly `SlideJam.Game` (§6) |
@@ -180,9 +183,9 @@ The single scene. Roots, with the scripts attached to each:
 
 | Root | Contents |
 |---|---|
-| `Main Camera` | orthographic, solid colour background, `CameraFit` (size set at run time from the level) |
-| `Board` | `BoardView`; creates its `Background`, `Mask` (a `SpriteMask`) and `Blocks` children at run time. The block sprite is `Assets/Art/Sprites/Square.png` |
-| `GameController` | `GameController`, `PhasePlayer`, `DragInput` |
+| `Main Camera` | orthographic, solid colour background, `CameraFit` (fits the grid and refits when the screen size changes; in Edit Mode it follows the Game view while you resize it) |
+| `Board` | `BoardView`; children `Background` (`SpriteRenderer`, `Square`, sorting order −1), `Mask` (`SpriteMask`, `Square`) and `Blocks` (the pre-made inactive `Block` instances that `BlockPool` adopts at `Awake`, created with the `Pre-create Blocks` context menu of `BoardView`), all placed in the scene; `BoardView` scales `Background` and `Mask` and, in Edit Mode, activates and positions the first `rows × cols` pre-made blocks as Play mode does (prefab colours), so the grid is visible without pressing Play **[recorded from delivered setup steps; not yet read in the scene file]** |
+| `GameController` | `GameController` (the composition root: the only component with serialized references to the other view components), `PhasePlayer`, `DragInput`; the last two have no scene references |
 | `Canvas` | Screen Space Overlay, Canvas Scaler Scale With Screen Size 360 × 640, match width; `HudView`; children `MovesText` (TMP) and `RestartButton` (OnClick → `GameController.Restart`) |
 | `EventSystem` | created with the Canvas (classic input module) |
 
@@ -200,7 +203,7 @@ What exists is marked [built]; the rest is the plan from `DESIGN.md` §6. Update
 | Engine `Board/` [built] | `Block`, `Axis`, `Cell`, `LevelData`, `BoardState` (`New`, `Clone`, `Hash`), `Board` (`Shift`, `ShiftAmount`, `LineLength`, `FloorMod`), `Matcher` (`Find`, `HasMatch`), `GridGenerator` and `SandSettler` (both internal; `SandSettler` is gravity only) |
 | Engine `Moves/` [built] | `MoveResolver.Move`, `MoveResult`, `Phase`, `PhaseKind` (`Shift`, `Clear`, `Fall`), `FallStart` |
 | Engine [planned] | slots, queue, `Seq` / `Pre` / `Vault`, complete / pull / overflow / win and undo (Phase 2), `Preview` (Phase 3), dual / ×2 / locked slot / `qGrow` / spring / sealed / chain with sand flow (Phase 4), `Hammer`, `SwapTarget`, `Stash` (Phase 5) |
-| Game `SlideJam.Game` [built] | `GameController` (owns the `BoardState`: `TryMove`, `Restart`, `IsBusy`, `StateChanged`; temporary level fields `_rows`, `_cols`, `_colors`, `_seed`), `BoardView` (block views by id with a pool: `Build`, `ShowState`, `ShowLineOffset`, `ShowBlock`, `TryGetCell`, `Matches`), `BlockView`, `DragInput`, `PhasePlayer` (snap, snap back, `Clear` pulse, `Fall`), `CameraFit`, `HudView` (move counter) |
+| Game `SlideJam.Game` [built] | `GameController` (composition root: `Awake` calls `Init` on `PhasePlayer` and `DragInput` and subscribes to `DragInput.Dragging` / `Released`; owns the `BoardState`: `TryMove`, `Restart`, `IsBusy`; temporary level fields `_rows`, `_cols`, `_colors`, `_seed`), `BoardView` (a `BlockPool` over the pre-made `Block` objects under `Blocks`, instantiating only when the pool is short, with a warning; the editor command `Pre-create Blocks` and an Edit Mode preview of the grid (white, prefab-coloured blocks laid out by the `rows × cols` that `GameController.OnValidate` pushes); `Build`, `ShowState`, `ShowLineOffset`, `ShowBlock`, `TryGetCell`, `Matches`), `BlockView` (`Bind`, `SetScaleFactor`, `ResetScale`), `BlockPool` (plain class: `Adopt`, `Get`, `Release`, `Total`, `Instantiated`), `DragInput` + `LineDrag`, `PhasePlayer` (snap, snap back, `Clear` pulse, `Fall`), `CameraFit` (`ExecuteAlways`; `Fit`, refit in `Update` when the screen size changes; in Edit Mode an editor tick follows the Game view size and `SetPreviewSize` receives the level size from `GameController.OnValidate`), `HudView` (`ShowMoves`) |
 | Game [planned] | slot and queue views, `BoosterBar`, `TutorialOverlay`, `TextTable` (display names), `SaveData` (tutorial-seen flags, booster counts), the `GameConfig` and `LevelConfig` ScriptableObjects and their conversion to engine data |
 | Tests [Edit Mode built] | `Rng/Mulberry32Tests`, `Board/ColumnStreamTests` (it tests `Rng/ColumnStream` but lives in `Board/`), `Board/MatcherTests`, `Board/BoardTests`, `Board/BoardStateTests` (+ the `TestGrids` helper), `Moves/MoveResolverTests`. Planned: caps, boosters, per-mechanic rules; Play Mode: real drag vs engine prediction |
 
@@ -210,7 +213,7 @@ Singletons and services are **not decided**. Prefer plain objects owned by one g
 
 ## 7. Game flow and persistence
 
-- **Run lifecycle:** [built, Phase 1] `GameController.Restart` builds `BoardState.New` from temporary serialized level fields; `DragInput` calls `GameController.TryMove`, which runs `MoveResolver.Move`; the new state is applied at once (`State`, `StateChanged`) and `PhasePlayer` plays the phases while `IsBusy` blocks input; afterwards `BoardView.Matches` checks the screen against the state (it logs an error if they differ) and `ShowState` redraws it. A refused move snaps the line back. [planned, Phase 2] load a `LevelConfig`, slots and queue, `Over` is `Win` or `Lose`, an end overlay with Undo and Restart.
+- **Run lifecycle:** [built, Phase 1] `GameController.Restart` builds `BoardState.New` from temporary serialized level fields; `DragInput` raises `Dragging` and `Released` (a `LineDrag`), the controller previews the line and calls `TryMove`, which runs `MoveResolver.Move`; the new state is applied at once and `PhasePlayer` plays the phases while the controller keeps `DragInput` disabled (`IsBusy`); afterwards `BoardView.Matches` checks the screen against the state (it logs an error if they differ) and `ShowState` redraws it. A refused move snaps the line back. [planned, Phase 2] load a `LevelConfig`, slots and queue, `Over` is `Win` or `Lose`, an end overlay with Undo and Restart.
 - **Endings:** `EndReason` = `Win`, `QueueOverflow` (append-only). `DESIGN.md` §5.7.
 - **Undo:** an unlimited stack of state snapshots in the first build; a **used booster is never refunded** (the booster count is not in the snapshot). `DESIGN.md` §5.7, §5.9.
 - **Persistence [planned, keys not chosen]:** tutorial steps already shown (`TutorialId`), the player's booster counts, the level reached. Nothing from the engine state is saved mid-run. Currency and prices are product settings, **OPEN** (§12).
@@ -219,11 +222,12 @@ Singletons and services are **not decided**. Prefer plain objects owned by one g
 
 ## 8. Input, UI and tutorial
 
-- **Input [built]:** `DragInput`, one pointer path (`Input.GetMouseButton*`; a touch works through the simulated mouse). On press it ignores the pointer when the view is busy or over uGUI (`EventSystem.IsPointerOverGameObject`, with the finger id on touch). Axis lock after 8 logical units of the 360-wide reference (`_lockDistance`), `notches = round(offset)`. Snap 130 ms and snap back 140 ms are played by `PhasePlayer`. The locked-line flash is planned (Phase 4). Rules: `DESIGN.md` §4.1.
+- **Input [built]:** `DragInput`, one pointer path (`Input.GetMouseButton*`; a touch works through the simulated mouse). On press it ignores the pointer when it is over uGUI (`EventSystem.IsPointerOverGameObject`, with the finger id on touch); while a move plays the controller disables the component, and `OnDisable` drops a half-made drag. Axis lock after 8 logical units of the 360-wide reference (`_lockDistance`), `notches = round(offset)`. Snap 130 ms and snap back 140 ms are played by `PhasePlayer`. The locked-line flash is planned (Phase 4). Rules: `DESIGN.md` §4.1.
 - **Preview [planned, Phase 3]:** runs the real move on a copy at every pointer move; white / orange outlines and the overflow warning. `DESIGN.md` §4.2.
 - **Tutorial [planned]:** overlay steps shown once, stored in save data, listed by append-only `TutorialId` in a data asset: `Slide`, `Targets`, `Queue` at game start; `Dual`, `X2`, `LockedSlot`, `QueueGrow`, `Chain`, `Seal`, `Spring` at the first level that has the mechanic; `Hammer`, `SwapTarget`, `Stash` when the booster is first offered. `DESIGN.md` §5.8.
 - **Layout [partly built]:** portrait, 360 logical units reference width, top to bottom: slots, next strip, queue and vault, next-spawn dots, grid, booster bar, undo / restart. `DESIGN.md` §4.
-- **HUD [built]:** a Screen Space Overlay canvas (Canvas Scaler 360 × 640, match width) with `MovesText` (TMP, driven by `HudView` through `GameController.StateChanged`, placeholder format "Moves: {0}") and `RestartButton` (OnClick → `GameController.Restart`). The strings are English placeholders until the text table exists: the default TMP font (LiberationSans SDF) lacks some Vietnamese glyphs.
+- **HUD [built]:** a Screen Space Overlay canvas (Canvas Scaler 360 × 640, match width) with `MovesText` (TMP, shown by `HudView.ShowMoves`, which `GameController` calls; placeholder format "Moves: {0}") and `RestartButton` (OnClick → `GameController.Restart`). The strings are English placeholders until the text table exists: the default TMP font (LiberationSans SDF) lacks some Vietnamese glyphs.
+- **Camera [partly built]:** `CameraFit` fits the grid (width first, height if taller) with a margin and refits when `Screen` changes size, also in Edit Mode (it follows the Game view size through `Handles.GetMainGameViewSize`, using the level size pushed by `GameController.OnValidate`). The camera size saved in the scene is therefore only a preview value that Play mode recomputes. Not layout-aware yet: slots, queue and the booster bar will need a content height, and `Screen.safeArea` (notch) is not handled (Q15).
 
 ---
 
@@ -235,7 +239,7 @@ Singletons and services are **not decided**. Prefer plain objects owned by one g
 | Level 2 "Vườn ươm" (6×6, ×2, dual, locked slot, growing queue) | specified; no asset |
 | Level 3 "Nhà kính" (7×7, adds chain, sealed block, spring) | specified; the special block cells of the prototype are **not** recorded in `DESIGN.md` v0.4 (the level-data section was dropped), so Level 3's block layout must be re-decided **OPEN** (§12) |
 | Boosters Hammer, Swap target, Stash | rules specified (`DESIGN.md` §5.9); no code. Prices, currency and free uses are undecided product settings |
-| Fruit set (strawberry, blueberry, pear, orange, plum) | decided (`DESIGN.md` §9). `DESIGN.md` says the art "already exists", but **no fruit art is in this repository**; where it lives is **OPEN**. Today a block is the `Square` sprite tinted with a 5-colour placeholder palette in `BoardView` (no shape per colour yet) |
+| Fruit set (strawberry, blueberry, pear, orange, plum) | decided (`DESIGN.md` §9). `DESIGN.md` says the art "already exists", but **no fruit art is in this repository**; where it lives is **OPEN**. Today a block is the `Block` prefab (the `Square` sprite) tinted with a 5-colour placeholder palette in `BoardView` (no shape per colour yet) |
 | Audio | none; the first build has no sound |
 | Fonts | only the default TMP font (LiberationSans SDF) is imported; Nunito (text) and Fredoka (headings) are planned |
 
@@ -250,7 +254,7 @@ All numbers are in `DESIGN.md` §5.1 (global table) and §5.9 (boosters). There 
 
 A `cap` outside `capMin..capMax` is a data error and must fail on load.
 
-**Temporary values outside any asset (an I10 debt).** They are serialized fields visible in the Inspector, not literals in logic, but they are not in `GameConfig` / `LevelConfig` yet: `PhasePlayer` timings (snap 0.13 s, snap back 0.14 s, clear 0.17 s, pulse 1.15, fall 0.16 s + 0.09 s per cell); `DragInput._lockDistance` 8; `BoardView._blockScale` 0.92, `_boardColor` and the 5-colour palette; `CameraFit._margin` 0.5 cell; `GameController` level fields (6 × 6, 5 colours, seed 20261031).
+**Temporary values outside any asset (an I10 debt).** They are serialized fields or prefab / scene values, not literals in logic, but they are not in `GameConfig` / `LevelConfig` yet: `PhasePlayer` timings (snap 0.13 s, snap back 0.14 s, clear 0.17 s, pulse 1.15, fall 0.16 s + 0.09 s per cell); `DragInput._lockDistance` 8; the 5-colour palette on `BoardView`; the block scale (0.92) on the `Block` prefab and the board colour on the `Background` object (art, not rules); `BoardView._preMadeBlocks` 49 (the size of the pre-made pool: a 7 × 7 grid); `CameraFit._margin` 0.5 cell; `GameController` level fields (6 × 6, 5 colours, seed 20261031).
 
 ---
 
@@ -293,6 +297,7 @@ Only genuine defects and undecided questions live here. When you fix one, move i
 | Q12 | Low | Animation curves and timings are first guesses; a refused move only snaps back (no shake or hint) | `PhasePlayer` | tune in Play mode; move the values to `GameConfig` |
 | Q13 | Low | HUD text is English and the default TMP font lacks some Vietnamese glyphs; the display text table does not exist | `HudView`, TMP | choose a font with Vietnamese support, build the text table (Phase 6) |
 | Q14 | Low | Untracked, editor-generated files: `ProjectSettings/SceneTemplateSettings.json`, `Assets/TextMesh Pro/` | repository | decide whether to commit them (both are normally committed) |
+| Q15 | Low | The camera fits only the grid: it ignores the height the slots, queue and booster bar will need, and `Screen.safeArea` (a notch can cover the move counter at the top) | `CameraFit`, `Canvas` | layout-aware fit in Phase 2 and 6; a safe-area fitter before a device build |
 
 ---
 
@@ -313,7 +318,7 @@ Nothing is built. Suggested order, following `CLAUDE.md` §5 (engine first, then
 2. **Mechanics:** ×2, dual, locked slot, growing queue, then chain, sealed block, spring, with a test each (I7 exits).
 3. **Boosters:** Hammer, Swap target, Stash with `Seq` / `Pre` / `Vault` in the snapshot, and the booster invariant tests.
 4. **Preview and undo** on the engine side.
-5. **View:** [Phase 1 built: board, drag, `PhasePlayer`, move counter, Restart] remaining: slot and queue views, booster bar, end overlay, then the tutorial and the text table.
+5. **View:** [Phase 1 built: board, drag, `PhasePlayer`, move counter, Restart, composition root, camera refit; the pooled `Block` prefab is delivered, unverified] remaining: slot and queue views, booster bar, end overlay, then the tutorial and the text table.
 6. **Config assets and levels:** `GameConfig`, three `LevelConfig`s (after Q1), solvability check (after Q2).
 7. **Theme and art:** import the fruit set (Q3), fonts, background.
 
@@ -347,6 +352,12 @@ Condensed; newest last. The rule decisions behind the prototype are in `DESIGN.m
 | S18 | 2026-11-04 | Animation uses coroutines and curves; DOTween is not installed and adding a package needs a decision | final |
 | S19 | 2026-11-04 | The new state is applied at once and the view catches up; `BoardView.Matches` checks the screen against the state after every move | final |
 | S20 | 2026-11-04 | Level fields stay on `GameController` until `LevelConfig` exists; blocks are a tinted `Square` sprite with a placeholder palette until the art decision (Q3) | temporary |
+| S21 | 2026-11-04 | `GameController` is the composition root: the only component wired in the Inspector. `PhasePlayer` and `DragInput` get dependencies through `Init`; `DragInput` reports through `Dragging` / `Released` events and is disabled while a move plays; `HudView` is driven by `ShowMoves`. No static singletons | final |
+| S22 | 2026-11-04 | Blocks are pooled with `UnityEngine.Pool.ObjectPool<BlockView>` over a `Block` prefab in `Assets/Prefabs/`, prewarmed to `rows × cols` | superseded by S24 |
+| S23 | 2026-11-04 | `CameraFit` refits when the screen size changes; the layout-aware fit and the safe area wait for Phase 2 and 6 (Q15) | final |
+| S24 | 2026-11-04 | Blocks are **pre-created in the scene** under `Board/Blocks` (editor command `Pre-create Blocks`, 49 = 7 × 7) and adopted by a small `BlockPool` class; `Instantiate` runs only when the pool is short, and a warning says so. The built-in `ObjectPool<T>` cannot adopt objects it did not create, so S22 is replaced. Cost: the scene file grows by the 49 objects (making `Blocks` a prefab would keep the scene small, but then the Edit Mode preview writes its positions back as scene overrides, see S25) | final; unverified in Play mode |
+| S25 | 2026-11-04 | In Edit Mode the scene shows the grid like Play mode: when `Pre Made Blocks` or the level size (`GameController` `_rows`, `_cols`) changes, `BoardView` creates the missing pre-made blocks, activates the first `rows × cols` of them and lays them out with the prefab's own colour; `GameController.OnValidate` pushes the size down (the controller still owns the level data, the view never references it). It never deletes blocks and does nothing in Play mode | final; unverified in the Editor |
+| S26 | 2026-11-04 | `CameraFit` is `ExecuteAlways`: in Edit Mode an `EditorApplication.update` tick reads the Game view size (`Handles.GetMainGameViewSize`) and fits the camera to the level size pushed by `GameController.OnValidate`, so the board is responsive without pressing Play. The aspect comes from that size in both modes, not from `Camera.aspect`, so the Camera inspector preview cannot disturb it. Side effect: the orthographic size stored in the scene follows the last Game view shape | final; unverified in the Editor |
 
 ---
 
@@ -361,6 +372,10 @@ Everything in this file marked `[verified]` was read from a file. Not checked:
 | `unityyamlmerge` availability | `git config --get merge.unityyamlmerge.driver` and the Unity install's `UnityYAMLMerge` |
 | The Edit Mode results (38 pass) are the user's report; the agent has not seen a result file | Test Runner > EditMode > Run All, or the batch command in `AGENTS.md` §6 |
 | The Phase 1 view in every case (snap back, a full revolution, cascades, Restart in the middle of an animation, touch on a device): the user ran it without errors but did not report each case | Play mode checklist in the Phase 1 view notes; build to a phone for touch |
+| The pre-made block pool (`BlockPool`, batch 3): same Play checklist; no `Block(Clone)` appears while the level fits in the pre-made blocks, a level larger than the pool logs a warning and instantiates the rest, and no "released twice" error | Play mode; then read the prefab and the scene file |
+| The Edit Mode grid preview (S25): changing `Pre Made Blocks` or `GameController` rows / columns redraws the white grid in the Scene view; a level larger than the pool logs a warning; nothing changes in Play mode | change the fields in the Inspector in Edit Mode |
+| The Edit Mode camera (S26): resizing the Game view or changing its aspect in Edit Mode refits the camera at once; changing `GameController` rows / columns refits it; Play mode behaves as before | resize the Game view and change the aspect dropdown in Edit Mode |
+| `CameraFit` refits when the Game view is resized during Play | resize the Game view in Play mode |
 | LFS is installed and the rules match the planned art / audio | `git lfs env` |
 
 ---
@@ -392,6 +407,10 @@ Run this before every commit. If a box applies, update that section **in the sam
 | 2026-11-04 | Phase 0 and 1 engine recorded: §2 statuses, §5, §6 code map, §11 tests, §12 Q10, §14, decisions S11–S16. Written from the files in the repository at `BoardCore`; nothing was run |
 | 2026-11-04 | Tests run by the user (38 pass): statuses in §2, §11, §14, §16 changed from "not yet run"; snapshot moved to `706d99c`; `ColumnStreamTests` found; Q10 reduced to the missing golden values |
 | 2026-11-04 | Phase 1 view recorded (levels 0 and 1 of the view plan: `BoardView`, `DragInput`, `PhasePlayer`, `HudView`, scene wiring read from the scene file): §1 snapshot, §2 I3 and I8, §5.1 assemblies, §5.3, §5.5, §6, §7, §8, §9, §10 temporary values, §11, §12 Q11–Q14, §14, decisions S17–S20 |
+| 2026-11-04 | View refactor recorded: composition root and events (S21), pooled `Block` prefab (S22, recorded from delivered code and not yet read in the repository), camera refit (S23); §3 wiring convention, §2 I8, §5.3, §5.5, §6, §7, §8, §9, §10, §12 Q15, §14, §16 |
+| 2026-11-04 | Block pool changed to pre-made scene objects adopted by `BlockPool` (S24, supersedes S22): §5.3, §5.5, §6, §10, §15, §16. Recorded from delivered code; not yet read in the repository |
+| 2026-11-04 | Edit Mode grid preview recorded (S25): §5.5, §6, §15, §16. Recorded from delivered code; not yet read in the repository |
+| 2026-11-04 | Edit Mode camera (S26): `CameraFit` rewritten as `ExecuteAlways` with an editor tick; `GameController.OnValidate` also pushes the size to it: §5.5, §6, §8, §15, §16. Written to the repository by the agent; not run. Also noted: the scene now has `Assets/Prefabs/Board.prefab` (Board, Background, Mask, Blocks, `BoardView`) with the preview size as scene overrides |
 
 ---
 
