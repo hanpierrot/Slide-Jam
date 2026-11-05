@@ -6,11 +6,11 @@
 
 | Snapshot | Value |
 |---|---|
-| Last verified against the repository | **2026-11-04**, static read of branch `BoardCore` @ `706d99c` (Phase 1 - Engine done) plus uncommitted work. Read from the repository: the view scripts up to the composition-root change (`GameController` wires `DragInput`, `HudView`, `PhasePlayer`, `CameraFit`) and the scene file. **Recorded from delivered code, not yet read in the repository and not yet run:** the `Block` prefab, `BlockPool` in `BoardView` with its pre-made blocks, and the scene objects `Background`, `Mask`, `Blocks` (§16). The user ran the 38 Edit Mode tests and the view through the composition-root change in Play mode and reported no errors (told in chat; no result file; the agent did not run Unity) |
-| State of the game | **Engine of Phase 0 and 1 done, and the Phase 1 view built:** a drag slides a line, `Move` runs, the phases play with animation (snap, `Clear` pulse, `Fall`), and a move counter and a Restart button exist. `GameController` is the one wired root; the camera refits when the screen changes shape. Still no slot, queue, win or loss, config asset, art or audio. §6 lists what exists and what is planned |
-| Branch / commit | `BoardCore` @ `706d99c`; `main` @ `f566452`; remote `https://github.com/hanpierrot/Slide-Jam.git`. Uncommitted: the view scripts, `SampleScene.unity`, `Assets/Art/Sprites/Square.png`, `Assets/TextMesh Pro/`, `ProjectSettings/SceneTemplateSettings.json`, the docs |
+| Last verified against the repository | **2026-11-05**: `main` @ `e56dae2` (`Merge branch 'BoardCore'`), working tree clean before this docs edit (`git status`). The scripts and the scene were read in earlier sessions; the `Block` and `Board` prefabs are committed (`git ls-files`) but their contents were not re-read. The user ran the 38 Edit Mode tests and the Phase 1 view in Play mode and reported no errors (told in chat; no result file; the agent did not run Unity). The pool, the Edit Mode preview and the Edit Mode camera (S24–S26) are still unconfirmed by the user (§16) |
+| State of the game | **Phase 1 is complete and merged. Phase 2 (targets, queue, win and loss) is planned and its decisions are fixed (S27–S34); no Phase 2 code exists yet.** Engine of Phase 0 and 1 done, and the Phase 1 view built: a drag slides a line, `Move` runs, the phases play with animation (snap, `Clear` pulse, `Fall`), and a move counter and a Restart button exist. `GameController` is the one wired root; the camera refits when the screen changes shape. Still no slot, queue, win or loss, config asset, art or audio. §6 lists what exists and what is planned |
+| Branch / commit | `main` @ `e56dae2` (includes the merged `BoardCore`); local and remote branch `BoardCore` still exist; remote `https://github.com/hanpierrot/Slide-Jam.git`. Uncommitted: `DOCS/DESIGN.md` and `DOCS/PROJECT.md` (this edit). The next feature branch is cut from `main` |
 | Engine | Unity **2022.3.62f3** (LTS), 2D template, built-in render pipeline, single scene |
-| Design spec | `DOCS/DESIGN.md` **v0.4** (2026-11-03) is the source of truth for rules, numbers and interfaces. This file records the **project state**: setup, code map, decisions, issues and what is built |
+| Design spec | `DOCS/DESIGN.md` **v0.8** (2026-11-05) is the source of truth for rules, numbers and interfaces. This file records the **project state**: setup, code map, decisions, issues and what is built |
 | Prototype | A throwaway HTML prototype (three levels, three boosters, a fruit-garden skin) produced the rules. It is **not in this repository** and nothing here depends on it |
 
 **Source-of-truth order:** *behaviour* = code and live assets → this file → plan notes. *Intent* = `DESIGN.md` (invariants and rules). When the code differs from `DESIGN.md`, that is either a bug (§12) or a design feature not built yet (§14): never record a deliberate design rule as a bug. When this file and the code disagree, the code wins: fix this file and say so in the commit.
@@ -235,7 +235,7 @@ Singletons and services are **not decided**. Prefer plain objects owned by one g
 
 | Item | Status |
 |---|---|
-| Level 1 "Vườn nhỏ" (6×6, no obstacles) | specified in `DESIGN.md` §5.1; runs today only as the temporary fields on `GameController` (6 × 6, 5 colours, seed 20261031) with the plain board; **no `LevelConfig` asset yet** |
+| Level 1 "Vườn nhỏ" (6×6, no obstacles) | specified in `DESIGN.md` §5.1; runs today only as the temporary fields on `GameController` (6 × 6, 5 colours, seed 20261031) with the plain board; **no `LevelConfig` asset yet** (Phase 2 task 6) |
 | Level 2 "Vườn ươm" (6×6, ×2, dual, locked slot, growing queue) | specified; no asset |
 | Level 3 "Nhà kính" (7×7, adds chain, sealed block, spring) | specified; the special block cells of the prototype are **not** recorded in `DESIGN.md` v0.4 (the level-data section was dropped), so Level 3's block layout must be re-decided **OPEN** (§12) |
 | Boosters Hammer, Swap target, Stash | rules specified (`DESIGN.md` §5.9); no code. Prices, currency and free uses are undecided product settings |
@@ -296,8 +296,7 @@ Only genuine defects and undecided questions live here. When you fix one, move i
 | Q11 | Low | While a line is dragged, a block jumps to the other edge when its centre crosses the edge (no ghost copy at the seam) | `BoardView.ShowLineOffset` | polish (level 2 of the view work) |
 | Q12 | Low | Animation curves and timings are first guesses; a refused move only snaps back (no shake or hint) | `PhasePlayer` | tune in Play mode; move the values to `GameConfig` |
 | Q13 | Low | HUD text is English and the default TMP font lacks some Vietnamese glyphs; the display text table does not exist | `HudView`, TMP | choose a font with Vietnamese support, build the text table (Phase 6) |
-| Q14 | Low | Untracked, editor-generated files: `ProjectSettings/SceneTemplateSettings.json`, `Assets/TextMesh Pro/` | repository | decide whether to commit them (both are normally committed) |
-| Q15 | Low | The camera fits only the grid: it ignores the height the slots, queue and booster bar will need, and `Screen.safeArea` (a notch can cover the move counter at the top) | `CameraFit`, `Canvas` | layout-aware fit in Phase 2 and 6; a safe-area fitter before a device build |
+| Q15 | Low | The camera fits only the grid: it ignores the height the slots, queue and booster bar will need, and `Screen.safeArea` (a notch can cover the move counter at the top) | `CameraFit`, `Canvas` | layout-aware fit on the Stage in Phase 2 task 7 (S34); a safe-area fitter before a device build (Phase 6) |
 
 ---
 
@@ -307,6 +306,7 @@ Only genuine defects and undecided questions live here. When you fix one, move i
 |---|---|---|---|
 | — | 2026-11-03 | Default orientation was Auto Rotation; set to Portrait with the other auto-rotate options off | `ProjectSettings/ProjectSettings.asset` |
 | — | 2026-11-04 | `ColumnStreamTests` (5 tests) was missing after Phase 0; it is now in the repository | `Assets/Tests/EditMode/Board/ColumnStreamTests.cs` |
+| Q14 | 2026-11-05 | The editor-generated files `ProjectSettings/SceneTemplateSettings.json` and `Assets/TextMesh Pro/` are committed (they are in `git ls-files`; the tree was clean at `e56dae2`) | repository |
 
 ---
 
@@ -314,13 +314,34 @@ Only genuine defects and undecided questions live here. When you fix one, move i
 
 Nothing is built. Suggested order, following `CLAUDE.md` §5 (engine first, then view, then data, then docs). **Treat as a proposal; the team sets priorities.**
 
-1. **Engine core:** [Phase 0 and 1 done, 38 tests pass] `BoardState`, `ColumnStream`, `Matcher`, shift, clear, `SandSettler`, `Move`. [Phase 2] complete, pull, overflow and win checks, the cap rule and undo. The Phase 1 view (grid, drag, phase player) is not started.
+1. **Engine core:** [Phase 0 and 1 done, 38 tests pass] `BoardState`, `ColumnStream`, `Matcher`, shift, clear, `SandSettler`, `Move`. [Phase 2, planned below] unit routing, complete, pull, overflow and win checks, the cap rule; undo is a stack of states kept by the game assembly.
 2. **Mechanics:** ×2, dual, locked slot, growing queue, then chain, sealed block, spring, with a test each (I7 exits).
 3. **Boosters:** Hammer, Swap target, Stash with `Seq` / `Pre` / `Vault` in the snapshot, and the booster invariant tests.
 4. **Preview and undo** on the engine side.
-5. **View:** [Phase 1 built: board, drag, `PhasePlayer`, move counter, Restart, composition root, camera refit; the pooled `Block` prefab is delivered, unverified] remaining: slot and queue views, booster bar, end overlay, then the tutorial and the text table.
+5. **View:** [Phase 1 built: board, drag, `PhasePlayer`, move counter, Restart, composition root, camera refit, pre-made block pool] remaining: slot and queue views and the end overlay (Phase 2), booster bar, then the tutorial and the text table.
 6. **Config assets and levels:** `GameConfig`, three `LevelConfig`s (after Q1), solvability check (after Q2).
 7. **Theme and art:** import the fruit set (Q3), fonts, background.
+
+### Phase 2 plan: targets, queue, win and loss (decisions S27–S34; nothing below is built)
+
+Goal: Level 1 can be played from start to a win or a loss, with Undo and Restart. Order matters: each task is finished and checked before the next. "Task n" below is the number in this list.
+
+| # | Task | Done when |
+|---|---|---|
+| 0 | Docs for the decisions (this edit) | `DESIGN.md` v0.8 and this file agree |
+| **Engine** | | |
+| 1 | Data model: `Target`, `Slot`, `EndReason`, `LevelData` extended (`ActiveSlots`, `QueueMax`, `QOpenStart`, `QGrow`, `Seq`), `BoardState` gains `Slots`, `Queue`, `QOpen`, `Seq`, `Pre`, `Vault`, `SeqI`, `Done`, `Ended` with `New` / `Clone` / `Hash` updated, `InternalsVisibleTo`, the old tests moved to a sandbox-level helper | the 38 existing tests pass unchanged in behaviour; new `Clone` / `Hash` tests for the added fields |
+| 2 | Unit routing inside `Clear` (slot, queue, vanish) with `Flights` and `Vanished`, in the order of `DESIGN.md` §5.4 | tests: routing rules, round 1 queues and round 2 or later vanishes, round numbers restart at 1 on every slide |
+| 3 | `Complete` and `Pull` loop, `qGrow`, exact `cap` 3 / 4 / 5 | tests: a target completes at exactly its own `cap`, pull order, chained completions, `qOpen` growth |
+| 4 | Overflow check, win check, `End` phase, `Move` refuses an ended state | tests: a completion rescues an overflow, win on the last target, loss on overflow, no `Fall` after an end |
+| 5 | Invariant tests: unit conservation (spawned = in slots + in queue + vanished + consumed by completions), same seed and moves give the same `Hash` (I4), holding the old state and moving again gives the same result, no hole after a non-terminal move (I9) | all pass |
+| **Game** | | |
+| 6 | `GameConfig` (`capMin`, `capMax`) and `LevelConfig` ScriptableObjects, the Level 1 asset (6 × 6, 5 colours, seed 20261031, 12 targets with colours 0 1 2 3 4 1 0 3 2 4 0 1 and `cap` 3, `queueMax` 5, `qOpenStart` 5, no `qGrow`), the conversion with the `cap` range check; `GameController` reads the `LevelConfig` instead of its temporary fields | a test for the conversion; Play mode runs as before |
+| 7 | Stage with anchor roots, layout-aware `CameraFit` (closes Q15), `SlotView`, `QueueView`, next strip and "targets left" in the HUD, drawn from the state with placeholder art | after every move the slots and queue on screen match the state |
+| 8 | End overlay (win, loss), Undo (shown on loss only) and Restart, a stack of `BoardState` snapshots | undo restores the board, queue, slots and stream positions; nothing refunded |
+| 9 | `PhasePlayer` plays `Clear` flights, `Complete`, `Pull` and `End`; the slots and queue are drawn from the state before a phase until the flight lands; `BoardView.Matches` also checks slots and queue | no error in the Console after a full game; the screen equals the state |
+
+Deliberately not in Phase 2: the drag preview and next-spawn dots (Phase 3, so I5 is not met for the queue consequence of a move until then), the locked slot, dual, ×2, spring, seal and chain (Phase 4), boosters (Phase 5), tutorial, text table and art (Phase 6). The Phase 1 sweep tests assume a run never ends; task 1 moves them to the sandbox helper rather than weakening them.
 
 Not built, proposed as later content (`DESIGN.md` §5.6): one-way rows, heavy blocks, a second slot-lock type, bigger grids, moving obstacles. Also later: limit or monetise undo, a tutorial spread over more levels, a seeded daily level.
 
@@ -358,6 +379,14 @@ Condensed; newest last. The rule decisions behind the prototype are in `DESIGN.m
 | S24 | 2026-11-04 | Blocks are **pre-created in the scene** under `Board/Blocks` (editor command `Pre-create Blocks`, 49 = 7 × 7) and adopted by a small `BlockPool` class; `Instantiate` runs only when the pool is short, and a warning says so. The built-in `ObjectPool<T>` cannot adopt objects it did not create, so S22 is replaced. Cost: the scene file grows by the 49 objects (making `Blocks` a prefab would keep the scene small, but then the Edit Mode preview writes its positions back as scene overrides, see S25) | final; unverified in Play mode |
 | S25 | 2026-11-04 | In Edit Mode the scene shows the grid like Play mode: when `Pre Made Blocks` or the level size (`GameController` `_rows`, `_cols`) changes, `BoardView` creates the missing pre-made blocks, activates the first `rows × cols` of them and lays them out with the prefab's own colour; `GameController.OnValidate` pushes the size down (the controller still owns the level data, the view never references it). It never deletes blocks and does nothing in Play mode | final; unverified in the Editor |
 | S26 | 2026-11-04 | `CameraFit` is `ExecuteAlways`: in Edit Mode an `EditorApplication.update` tick reads the Game view size (`Handles.GetMainGameViewSize`) and fits the camera to the level size pushed by `GameController.OnValidate`, so the board is responsive without pressing Play. The aspect comes from that size in both modes, not from `Camera.aspect`, so the Camera inspector preview cannot disturb it. Side effect: the orthographic size stored in the scene follows the last Game view shape | final; unverified in the Editor |
+| S27 | 2026-11-05 | The end of a run is a nullable state field `Ended` (`EndReason?`: `Win`, `QueueOverflow`), not a separate `Over` enum; `DESIGN.md` §6.1 follows | final |
+| S28 | 2026-11-05 | Units of a round are routed in the row-major order of `Matcher.Find`, a ×2 block's two units one after the other, all before the round's completions; completions run left to right and repeat (`DESIGN.md` §5.4) | final; this fills a gap in the locked resolution order, it does not change it |
+| S29 | 2026-11-05 | The engine declares `InternalsVisibleTo("SlideJam.Tests.EditMode")` so tests can build states with chosen slots, queue and `Seq` | final |
+| S30 | 2026-11-05 | `LevelData` is extended with `ActiveSlots`, `QueueMax`, `QOpenStart`, `QGrow`, `Seq`; the Phase 1 tests move to a sandbox-level helper (very long `Seq`, very large queue) instead of the old four-argument constructor | final |
+| S31 | 2026-11-05 | `Seq`, `Pre` and `Vault` are in the state from Phase 2 (the vault stays empty until Phase 5) so `Clone` and `Hash` change once | final |
+| S32 | 2026-11-05 | `qGrow` is built in Phase 2; the locked slot, dual, ×2, spring, seal and chain stay in Phase 4 | final |
+| S33 | 2026-11-05 | A minimal `GameConfig` (`capMin` 3, `capMax` 5) is created in Phase 2; the 3 to 5 range is checked in the game assembly when a `LevelConfig` is converted, and the engine only requires `Cap ≥ 1` | final |
+| S34 | 2026-11-05 | World-space layout is a Stage with anchor roots (`Slots`, `Strip`, `Queue`, `Grid`) in cell units; `CameraFit` fits the Stage bounds (closes Q15 except the safe area) | final |
 
 ---
 
@@ -370,6 +399,7 @@ Everything in this file marked `[verified]` was read from a file. Not checked:
 | The project opens and compiles in Unity 2022.3.62f3 with the current packages | open in the Editor; read the Console |
 | The Portrait setting survived (the Editor was open when the file was edited and may rewrite it) | Project Settings > Player > Resolution and Presentation |
 | `unityyamlmerge` availability | `git config --get merge.unityyamlmerge.driver` and the Unity install's `UnityYAMLMerge` |
+| Phase 1 was merged to `main` at `e56dae2`; the user has not yet said that the pool, the Edit Mode preview and the Edit Mode camera (S24–S26) were checked after the merge. They stay unconfirmed until they do | confirm in the Editor, then change S24–S26 to verified |
 | The Edit Mode results (38 pass) are the user's report; the agent has not seen a result file | Test Runner > EditMode > Run All, or the batch command in `AGENTS.md` §6 |
 | The Phase 1 view in every case (snap back, a full revolution, cascades, Restart in the middle of an animation, touch on a device): the user ran it without errors but did not report each case | Play mode checklist in the Phase 1 view notes; build to a phone for touch |
 | The pre-made block pool (`BlockPool`, batch 3): same Play checklist; no `Block(Clone)` appears while the level fits in the pre-made blocks, a level larger than the pool logs a warning and instantiates the rest, and no "released twice" error | Play mode; then read the prefab and the scene file |
@@ -411,6 +441,7 @@ Run this before every commit. If a box applies, update that section **in the sam
 | 2026-11-04 | Block pool changed to pre-made scene objects adopted by `BlockPool` (S24, supersedes S22): §5.3, §5.5, §6, §10, §15, §16. Recorded from delivered code; not yet read in the repository |
 | 2026-11-04 | Edit Mode grid preview recorded (S25): §5.5, §6, §15, §16. Recorded from delivered code; not yet read in the repository |
 | 2026-11-04 | Edit Mode camera (S26): `CameraFit` rewritten as `ExecuteAlways` with an editor tick; `GameController.OnValidate` also pushes the size to it: §5.5, §6, §8, §15, §16. Written to the repository by the agent; not run. Also noted: the scene now has `Assets/Prefabs/Board.prefab` (Board, Background, Mask, Blocks, `BoardView`) with the preview size as scene overrides |
+| 2026-11-05 | Phase 1 recorded as complete and merged (`main` @ `e56dae2`); Q14 moved to §13; Phase 2 plan and decisions S27–S34 recorded before any code (§12 Q15, §14, §15, §16, snapshot); `DESIGN.md` raised to v0.8 (§4, §5.1, §5.4, §6, §6.1, §6.2, §8). Docs only; nothing was run |
 
 ---
 

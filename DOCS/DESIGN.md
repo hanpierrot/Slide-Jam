@@ -4,7 +4,7 @@
 **Engine:** Unity **2022.3.62f3** (LTS), 2D, built-in render pipeline, classic Input Manager · one finger: drag only · single screen
 **Platform:** target iOS and Android, portrait only (the project's default orientation is Portrait). The Editor uses the mouse through the same pointer path as touch
 **Working title:** Slide Jam (change freely; nothing in the rules depends on it) · **Theme:** "Vườn trái cây" (fruit garden), display only, §9
-**Version:** 0.7 (2026-11-04) — v0.7 adds the pooled `Block` prefab to the proposed layout (§6.2). v0.6 marks the Phase 1 view (board, drag, phase player, move counter, restart) as built in the Unity project (§4, §7). v0.5 records the decisions made while writing the first engine code: the colour mapping and the separate grid stream (I4 detail), the slide direction (§5.2), the empty cell, `MoveResult`, the reduced phase kinds and the `FallStart` list (§6) and the stateless stream generator (§7). v0.4 lets each target hold 3 to 5 units and lets every level choose its number of targets (§5.1), drops the level-data, balance and measurement sections, turns the hints into a tutorial (§5.8), makes a used booster non-refundable (§5.7, §5.9) and changes the fruit set (§9). v0.3 added the third reference level, the three boosters, the theme and the vault in the resolution order. v0.2 (2026-11-02) wrote the rules from the prototypes and rewrote interfaces and implementation notes for Unity. The engine code of Phase 0 and Phase 1 (random, board, slide, match, settle, `Move`) is written in `Assets/Scripts/Engine/` with 38 Edit Mode tests (run by the user, all passing); the Phase 1 view (`Assets/Scripts/Game/`) runs in Play mode without errors (reported by the user); everything else on the Unity side is **[PROPOSED]**.
+**Version:** 0.8 (2026-11-05) — v0.8 records the Phase 2 decisions before they are built: the order in which a round's units are routed (§5.4), the end of a run as a nullable `Ended` field (§6.1), the extended `LevelData`, the minimal `GameConfig`, `qGrow` in Phase 2 and the stage layout (§4, §6, §7). v0.7 adds the pooled `Block` prefab to the proposed layout (§6.2). v0.6 marks the Phase 1 view (board, drag, phase player, move counter, restart) as built in the Unity project (§4, §7). v0.5 records the decisions made while writing the first engine code: the colour mapping and the separate grid stream (I4 detail), the slide direction (§5.2), the empty cell, `MoveResult`, the reduced phase kinds and the `FallStart` list (§6) and the stateless stream generator (§7). v0.4 lets each target hold 3 to 5 units and lets every level choose its number of targets (§5.1), drops the level-data, balance and measurement sections, turns the hints into a tutorial (§5.8), makes a used booster non-refundable (§5.7, §5.9) and changes the fruit set (§9). v0.3 added the third reference level, the three boosters, the theme and the vault in the resolution order. v0.2 (2026-11-02) wrote the rules from the prototypes and rewrote interfaces and implementation notes for Unity. The engine code of Phase 0 and Phase 1 (random, board, slide, match, settle, `Move`) is written in `Assets/Scripts/Engine/` with 38 Edit Mode tests (run by the user, all passing); the Phase 1 view (`Assets/Scripts/Game/`) runs in Play mode without errors (reported by the user); everything else on the Unity side is **[PROPOSED]**.
 
 ---
 
@@ -98,7 +98,7 @@ These are the load-bearing rules. Breaking any one of them breaks the game.
 
 ## 4. Board objects and HUD
 
-The screen is one portrait layout on a reference width of **360 logical units**, top to bottom: target slots, next strip, queue and vault, next-spawn dots, grid, booster bar, undo and restart. Cell size is 54 for a 6×6 grid and 48 for 7×7 (§5.1). The layout is a view decision; the engine does not depend on it. **Built:** the board is drawn with sprites under an orthographic camera fitted to the grid width (`CameraFit`, margin 0.5 cell), and the HUD is a uGUI canvas with a Canvas Scaler at 360 × 640 matching width.
+The screen is one portrait layout on a reference width of **360 logical units**, top to bottom: target slots, next strip, queue and vault, next-spawn dots, grid, booster bar, undo and restart. Cell size is 54 for a 6×6 grid and 48 for 7×7 (§5.1). The layout is a view decision; the engine does not depend on it. **Built:** the board is drawn with sprites under an orthographic camera fitted to the grid width (`CameraFit`, margin 0.5 cell), and the HUD is a uGUI canvas with a Canvas Scaler at 360 × 640 matching width. **[PROPOSED, Phase 2]** The world-space part of the layout is a **Stage**: one parent object whose children are anchor roots (`Slots`, `Strip`, `Queue`, `Grid`) placed at fixed offsets in cell units, so the camera can fit the Stage's whole bounds (width first, then height) instead of the grid alone. The slot, strip and queue views are drawn under their anchors; the HUD and the buttons stay in the uGUI canvas.
 
 | Object | Role |
 |---|---|
@@ -166,6 +166,8 @@ Colours are numbered 0–4 and the five items of a theme must also differ in **s
 
 **Targets.** A level is free to choose how many targets it has (the length of `sequence`) and the `cap` of each one, from `capMin` to `capMax` inclusive; a value outside that range is a data error and fails on load (I10). A target's `cap` stays with it when the strip is reordered (§5.9). A bigger `cap` means more units for the same target, so raise `queueMax` or `qOpenStart` with it only after checking the level.
 
+**Data in the Unity project [PROPOSED, Phase 2].** `LevelData` (engine) gains `ActiveSlots`, `QueueMax`, `QOpenStart`, `QGrow` and `Seq` (an array of `Target {Color, Cap}`); the engine only requires `Cap ≥ 1`. The 3 to 5 range is a data rule and is checked where a `LevelConfig` is converted to `LevelData` (game assembly), using `capMin` and `capMax` from a minimal `GameConfig` ScriptableObject created in Phase 2 (`swapMin` and the booster settings join it in Phase 5). `qGrow` is built in Phase 2; the locked slot, dual, ×2, spring, seal and chain wait for Phase 4.
+
 ### 5.2 Slide
 
 A **line** is one whole row or one whole column. Sliding by `k` cells moves every block `k` places along the line, and the ones that pass the end re-enter at the start.
@@ -206,6 +208,8 @@ After a valid slide the engine runs these phases in order, and repeats from `cle
 3. Otherwise, in round 1: **the queue** (appended at the end). In round 2 or later: **the unit vanishes** (I6).
 
 A ×2 block gives two separate units; each goes through the three steps on its own, so one can fill a slot while the other vanishes or queues.
+
+**Order of the units inside a round.** Units are routed one at a time, so the order decides which unit takes the last free pip and which one is queued or vanishes. The order is fixed: the consumed cells in the row-major order of `Matcher.Find` (top row first, left to right), and for a ×2 block its two units one after the other. The units of a round are all routed before any completion of that round runs, so a slot that fills during the round stops accepting at its `cap` and the next unit goes to the next rule. Completions run in slot order, left to right, and repeat while some slot is full (see below).
 
 **Completing a slot** (`complete`): the completed count goes up by one; the slot is replaced by the next target of `sequence` (or becomes empty when the sequence is finished); a **locked neighbour slot** (index ± 1) opens; `qOpen` goes up by one (up to `queueMax`). Then `pull` runs: the vault is scanned first, then the queue, each from the first unit to the last, and every unit that a slot now accepts (rule 1 above) flies to that slot, the rest keep their order. A pull can fill another slot, which then completes in turn, and so on until nothing is full.
 
@@ -304,7 +308,7 @@ The engine of Phase 0 and Phase 1 exists in `Assets/Scripts/Engine/` (rows liste
 
 | Member | Purpose |
 |---|---|
-| `BoardState.New(LevelData)` | A new level state: grid, stream pointers, counters (slots, queue, `Seq`, `Pre` and `Vault` are added with Phases 2 and 5) |
+| `BoardState.New(LevelData)` | A new level state: grid, stream pointers, counters. **[PROPOSED, Phase 2]** also the first `ActiveSlots` slots taken from `Seq`, an empty queue and vault, `QOpen = QOpenStart`, `Pre` of zeros and `Ended = null`; `Seq`, `Pre` and `Vault` are in the state from Phase 2 so `Clone` and `Hash` do not change again with the boosters of Phase 5 (the vault stays empty until then) |
 | `MoveResolver.Move(state, axis, index, notches) → MoveResult` | Apply a slide to a **copy**; returns `{ Ok, State, Phases }`. `Ok` is false for a zero shift, a locked line or a finished run; a refused move returns the input state unchanged and no phases |
 | `MoveResolver.Preview(state, axis, index, notches) → Preview?` | The drag preview (§4.2): `{ Cells, ToQueue, Lose }`, or `null` when nothing matches. It calls `Move` on a copy |
 | `Board.Shift(grid, axis, index, k)` · `Board.ShiftAmount(notches, step, length)` · `Board.LineLength(level, axis)` · `Board.FloorMod` | The slide on a raw grid · `k = floorMod(notches × step, length)` · the length of a line |
@@ -322,6 +326,8 @@ The stream generator is `mulberry32` in `uint` arithmetic with wrap-around (`unc
 
 **Built so far (Phase 0 and 1):** every row above except `Preview`, `Hammer`, `SwapInfo`, `SwapTarget`, `Stash`, `LineLocked`, `LineCells` and `StepOf`. `Matcher` handles plain blocks only.
 
+**Test access [PROPOSED, Phase 2].** The engine assembly declares `InternalsVisibleTo("SlideJam.Tests.EditMode")`, so a test can build a state with chosen slots, queue and `Seq` without a public setter. Nothing in the game assembly uses it. The tests that need a run that cannot end (the Phase 1 sweeps) use a sandbox-level helper (a very long `Seq` and a very large queue) instead of the old four-argument `LevelData`; they are not weakened.
+
 ### 6.1 Phase list
 
 `Phases[0]` is always `Shift`. Each phase carries a full snapshot of the state after it (`Snap`), so the view can replay them in order without re-running logic.
@@ -335,22 +341,24 @@ The stream generator is `mulberry32` in `uint` arithmetic with wrap-around (`unc
 | `Swap` | `Slot`, `Color`, `From` (the displaced colour) |
 | `Stash` | `Flights` (queue to vault) |
 | `Fall` | `Starts`: a list of `FallStart {Id, From}` for every block that moved or spawned, in row-major order of its final cell (a list, so the order never depends on a dictionary). `From.Row` is negative for a block spawned above the grid |
-| `End` | — (the final state has `Over` = `Win` or `Lose`) |
+| `End` | `Reason` (`EndReason`: `Win` or `QueueOverflow`); the final state has `Ended` set to the same value |
 
 **Built so far (Phase 1):** `PhaseKind` is `Shift`, `Clear`, `Fall`; a move is `Shift` followed by a `Clear`, `Fall` pair per round. `Clear` carries `Round` and `MatchedCells` and only empties the cells (no units yet). The other kinds join at the end of the enum (append-only). `Phase` is one class with the fields of this table; fields that do not belong to its kind are empty.
 
+**Planned for Phase 2:** `PhaseKind` gains `Complete`, `Pull` and `End` at the end of the enum, `Clear` gains `Flights` and `Vanished`, and a move is `Shift` followed, per round, by `Clear`, then a `Complete` / `Pull` group for each completion, then `Fall`. A win or a loss ends the move right after its check with an `End` phase and no `Fall` (the board may then contain empty cells, I9). `Move` refuses a state whose `Ended` is not null.
+
 A **flight** is `{Color, From, To}` with `From` a cell, a queue index or a vault index (`{V}`) and `To` one of `{Slot, Pip}`, `{Q}` (queue chair), `Vault` or `Vanish`.
 
-**State shape.** `Grid[r, c]` is a `Block` struct `{Id, Kind (Normal | Dual), Color | Colors, X2, Spring, Chain, Seal}` (Phase 1 has `Id` and `Color` only); an empty cell is `Id == 0` and real ids start at 1; `Slots[i]` is `null` or `{Color, Count, Cap, Locked}`; the rest is `Queue`, `Vault`, `QOpen`, `Seq` (entries `{Color, Cap}`), `Pre`, `SeqI`, `Ptr[]`, `Moves`, `Done`, `Over`, `NextId`. `LevelData` carries `QMax`, `QOpen`, `QGrow`, `LockedSlot`, `Seq` and the special blocks; `SwapMin` comes from `GameConfig`.
+**State shape.** `Grid[r, c]` is a `Block` struct `{Id, Kind (Normal | Dual), Color | Colors, X2, Spring, Chain, Seal}` (Phase 1 has `Id` and `Color` only); an empty cell is `Id == 0` and real ids start at 1; `Slots[i]` is `null` or `{Color, Count, Cap, Locked}` (`Locked` is always false until Phase 4); the rest is `Queue`, `Vault`, `QOpen`, `Seq` (entries `{Color, Cap}`), `Pre`, `SeqI`, `Ptr[]`, `Moves`, `Done`, `Ended` (`EndReason?`, null while the run goes on), `NextId`. `LevelData` carries `QMax`, `QOpen`, `QGrow`, `LockedSlot`, `Seq` and the special blocks; `SwapMin` comes from `GameConfig`.
 
 ### 6.2 Proposed project layout
 
 ```
 Assets/Scripts/Engine/   assembly SlideJam.Engine
   Rng/                   Mulberry32, ColumnStream
-  Board/                 Block, Axis, Cell, LevelData, BoardState, Board, Matcher, GridGenerator, SandSettler
+  Board/                 Block, Axis, Cell, LevelData, BoardState, Board, Matcher, GridGenerator, SandSettler (Phase 2 adds Target, Slot, EndReason)
   Moves/                 PhaseKind, Phase, FallStart, MoveResult, MoveResolver
-Assets/Scripts/Game/     assembly SlideJam.Game: GameController (the one wired root), BoardView, BlockView, DragInput, PhasePlayer, HudView, CameraFit, config ScriptableObjects
+Assets/Scripts/Game/     assembly SlideJam.Game: GameController (the one wired root), BoardView, BlockView, DragInput, PhasePlayer, HudView, CameraFit, config ScriptableObjects (`GameConfig`, `LevelConfig`, with the conversion to `LevelData`); Phase 2 adds SlotView, QueueView, the end overlay
 Assets/Prefabs/          Block.prefab (the pooled block view)
 Assets/Design/           GameConfig.asset, Levels/LevelConfig_*.asset
 Assets/Tests/EditMode/   assembly SlideJam.Tests.EditMode (Rng/, Board/, Moves/): rules, invariants, determinism
@@ -420,7 +428,8 @@ Use these exact terms in code, commits and agent prompts.
 | **Dual block** | A block that counts as two colours |
 | **Locked slot** | A target that accepts nothing until its neighbour slot completes |
 | **Preview** | The outline and label shown while dragging (§4.2) |
-| **`EndReason`** | `Win` or `QueueOverflow` |
+| **`EndReason`** | `Win` or `QueueOverflow`; the state field `Ended` holds it, or null while the run goes on |
+| **Stage** | The world-space parent of the slots, next strip, queue and grid; the camera fits its bounds (§4) |
 
 ---
 
