@@ -8,11 +8,11 @@ namespace SlideJam.Tests.EditMode
         private const uint Seed = 20261031u;
         private const int Colors = 5;
 
-        private static LevelData Level(uint seed, int size = 6) => new LevelData(size, size, Colors, seed);
+        private static LevelData Level(uint seed, int size = 6) => LevelData.Sandbox(size, size, Colors, seed);
 
         private static BoardState StateWith(uint seed, params string[] rows)
         {
-            BoardState state = BoardState.New(new LevelData(rows.Length, rows[0].Length, Colors, seed));
+            BoardState state = BoardState.New(LevelData.Sandbox(rows.Length, rows[0].Length, Colors, seed));
             Block[,] crafted = TestGrids.FromRows(rows);
             for (int r = 0; r < rows.Length; r++)
             {
@@ -35,6 +35,17 @@ namespace SlideJam.Tests.EditMode
             int size = state.Level.Rows;
             Axis axis = i % 2 == 0 ? Axis.Row : Axis.Col;
             return MoveResolver.Move(state, axis, (i * 3) % size, 1 + i % 3);
+        }
+        
+        private static Phase FirstOf(MoveResult result, PhaseKind kind)
+        {
+            foreach (Phase phase in result.Phases)
+            {
+                if (phase.Kind == kind) return phase;
+            }
+
+            Assert.Fail($"No {kind} phase.");
+            return null;
         }
 
         [Test]
@@ -94,7 +105,7 @@ namespace SlideJam.Tests.EditMode
                 Assert.AreEqual(0, clear.MatchedCells[r].Col);
             }
 
-            Phase fall = result.Phases[2];
+            Phase fall = FirstOf(result, PhaseKind.Fall);
             Assert.AreEqual(PhaseKind.Fall, fall.Kind);
             Block[,] grid = fall.Snap.Grid;
             
@@ -114,7 +125,7 @@ namespace SlideJam.Tests.EditMode
             BoardState state = StateWith(Seed, "231", "114", "023");
             MoveResult result = MoveResolver.Move(state, Axis.Col, 2, 1);
 
-            Phase fall = result.Phases[2];
+            Phase fall = FirstOf(result, PhaseKind.Fall);
             Block[,] grid = fall.Snap.Grid;
             Assert.AreEqual(new[] { "233", "024" }, new[] { TestGrids.ToRows(grid)[1], TestGrids.ToRows(grid)[2] });
             for (int c = 0; c < 3; c++) Assert.AreEqual(Spawn(c, 0), grid[0, c].Color);
@@ -175,13 +186,22 @@ namespace SlideJam.Tests.EditMode
                 for (int i = 0; i < 25; i++)
                 {
                     MoveResult result = Pattern(state, i);
-                    Assert.AreEqual(1, result.Phases.Count % 2);
+                    Assert.AreEqual(PhaseKind.Shift, result.Phases[0].Kind);
+
                     int round = 0;
-                    for (int p = 1; p < result.Phases.Count; p += 2)
+                    int p = 1;
+                    while (p < result.Phases.Count)
                     {
                         Assert.AreEqual(PhaseKind.Clear, result.Phases[p].Kind);
-                        Assert.AreEqual(PhaseKind.Fall, result.Phases[p + 1].Kind);
                         Assert.AreEqual(++round, result.Phases[p].Round);
+                        p++;
+
+                        while (p < result.Phases.Count
+                               && (result.Phases[p].Kind == PhaseKind.Complete || result.Phases[p].Kind == PhaseKind.Pull)) p++;
+
+                        Assert.Less(p, result.Phases.Count);
+                        Assert.AreEqual(PhaseKind.Fall, result.Phases[p].Kind);
+                        p++;
                     }
 
                     state = result.State;

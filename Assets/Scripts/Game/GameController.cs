@@ -59,7 +59,7 @@ namespace SlideJam.Game
             _run = null;
             SetBusy(false);
 
-            var level = new LevelData(_rows, _cols, _colors, (uint)_seed);
+            var level = LevelData.Sandbox(_rows, _cols, _colors, (uint)_seed);
             State = BoardState.New(level);
             _boardView.Build(level);
             _cameraFit.Fit(_cols, _rows);
