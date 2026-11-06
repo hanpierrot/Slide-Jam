@@ -33,15 +33,32 @@ namespace SlideJam.Engine
 
                 List<Flight> flights = Resolution.RouteUnits(next, matched, round, out int vanished);
                 phases.Add(Phase.Clear(next.Clone(), round, matched, flights, vanished));
-                
+
                 Resolution.CompleteAndPull(next, phases);
-                if (Resolution.CheckEnd(next, phases)) break;
+                Resolution.CheckEnd(next);
 
                 List<FallStart> starts = SandSettler.Settle(next);
                 phases.Add(Phase.Fall(next.Clone(), starts));
+
+                if (next.Ended == EndReason.QueueOverflow) break;
             }
 
+            if (next.Ended.HasValue) phases.Add(Phase.End(next.Clone(), next.Ended.Value));
+
             return new MoveResult(true, next, phases);
+        }
+        
+        public static MoveResult Revive(BoardState state)
+        {
+            if (state.Ended != EndReason.QueueOverflow) return MoveResult.Rejected(state);
+
+            BoardState next = state.Clone();
+            int cleared = next.Queue.Count;
+            next.Queue.Clear();
+            next.Ended = null;
+            List<Flight> flights = Shuffler.Shuffle(next);
+
+            return new MoveResult(true, next, new List<Phase> { Phase.Revive(next.Clone(), flights, cleared) });
         }
     }
 }

@@ -4,7 +4,8 @@
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "SlideJam.Engine"
+        "SlideJam.Engine",
+        "SlideJam.Game"
     ],
     "includePlatforms": [
         "Editor"

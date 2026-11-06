@@ -8,5 +8,6 @@ namespace SlideJam.Engine
         Complete,
         Pull,
         End,
+        Revive,
     }
 }

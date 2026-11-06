@@ -57,5 +57,10 @@ namespace SlideJam.Engine
         {
             return new Phase(PhaseKind.End, snap) { Reason = reason };
         }
+        
+        internal static Phase Revive(BoardState snap, IReadOnlyList<Flight> flights, int queueCleared)
+        {
+            return new Phase(PhaseKind.Revive, snap) { Flights = flights, Vanished = queueCleared };
+        }
     }
 }
