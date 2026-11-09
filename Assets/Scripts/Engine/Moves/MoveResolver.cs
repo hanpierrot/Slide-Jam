@@ -12,6 +12,7 @@ namespace SlideJam.Engine
             LevelData level = state.Level;
             int lines = axis == Axis.Row ? level.Rows : level.Cols;
             if (index < 0 || index >= lines) throw new ArgumentOutOfRangeException(nameof(index));
+            if (state.Ended.HasValue) return MoveResult.Rejected(state);
 
             const int step = 1;
             int k = Board.ShiftAmount(notches, step, Board.LineLength(level, axis));
@@ -30,14 +31,34 @@ namespace SlideJam.Engine
                 if (matched.Count == 0) break;
                 if (round > MaxRounds) throw new InvalidOperationException("Resolution did not finish.");
 
-                foreach (Cell cell in matched) next.Grid[cell.Row, cell.Col] = Block.Empty;
-                phases.Add(Phase.Clear(next.Clone(), round, matched));
+                List<Flight> flights = Resolution.RouteUnits(next, matched, round, out int vanished);
+                phases.Add(Phase.Clear(next.Clone(), round, matched, flights, vanished));
+
+                Resolution.CompleteAndPull(next, phases);
+                Resolution.CheckEnd(next);
 
                 List<FallStart> starts = SandSettler.Settle(next);
                 phases.Add(Phase.Fall(next.Clone(), starts));
+
+                if (next.Ended == EndReason.QueueOverflow) break;
             }
 
+            if (next.Ended.HasValue) phases.Add(Phase.End(next.Clone(), next.Ended.Value));
+
             return new MoveResult(true, next, phases);
+        }
+        
+        public static MoveResult Revive(BoardState state)
+        {
+            if (state.Ended != EndReason.QueueOverflow) return MoveResult.Rejected(state);
+
+            BoardState next = state.Clone();
+            int cleared = next.Queue.Count;
+            next.Queue.Clear();
+            next.Ended = null;
+            List<Flight> flights = Shuffler.Shuffle(next);
+
+            return new MoveResult(true, next, new List<Phase> { Phase.Revive(next.Clone(), flights, cleared) });
         }
     }
 }

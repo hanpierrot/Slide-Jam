@@ -5,5 +5,9 @@ namespace SlideJam.Engine
         Shift,
         Clear,
         Fall,
+        Complete,
+        Pull,
+        End,
+        Revive,
     }
 }
