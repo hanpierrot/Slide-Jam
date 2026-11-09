@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using SlideJam.Engine;
 using UnityEngine;
 
@@ -17,6 +18,7 @@ namespace SlideJam.Game
         [SerializeField] private QueueView _queueView;
         [SerializeField] private StripView _stripView;
         [SerializeField] private EndOverlayView _endOverlay;
+        [SerializeField] private PreviewView _previewView;
         
         [Header("Configs")]
         [SerializeField] private GameManager _gameManager;
@@ -24,6 +26,12 @@ namespace SlideJam.Game
         [SerializeField] private bool _logMoves = true;
         
         private const float SlotsExtraWidth = 0.4f;
+        
+        private MovePreview _preview;
+        private bool _hasPreview;
+        private Axis _previewAxis;
+        private int _previewIndex;
+        private int _previewNotches;
         
         private GameConfig Config => _gameManager != null ? _gameManager.Config : null;
 
@@ -41,6 +49,7 @@ namespace SlideJam.Game
             }
             
             _phasePlayer.Init(_boardView, _slotsView, _queueView, _stripView, Config, ShowProgress);
+            if (_previewView != null) _previewView.Init(_boardView, _queueView, Config);
             _dragInput.Init(_boardView, _cameraFit.Cam, Config);
             _slotsView.Init(_boardView.ColorOf);
             _queueView.Init(_boardView.ColorOf);
@@ -82,7 +91,7 @@ namespace SlideJam.Game
             }
         }
         
-        public void PreviewLayout() // changed: no context menu any more; the Slide Jam > Setup Scene and Refresh Layout menus call it (Edit Mode only)
+        public void PreviewLayout()
         {
             if (Application.isPlaying) return;
 
@@ -119,6 +128,7 @@ namespace SlideJam.Game
         {
             if (_run != null) StopCoroutine(_run);
             _run = null;
+            ClearPreview();
             _phasePlayer.CancelFlights();
             _endOverlay.Hide();
 
@@ -154,7 +164,7 @@ namespace SlideJam.Game
             _run = StartCoroutine(Run(_phasePlayer.PlayRevive(before, result)));
         }
         
-        public bool TryMove(Axis axis, int index, int notches, float startOffset)
+        public bool TryMove(Axis axis, int index, int notches, float startOffset, bool previewKnown = false, MovePreview expected = null)
         {
             if (IsBusy) return false;
 
@@ -172,6 +182,8 @@ namespace SlideJam.Game
                 _run = StartCoroutine(Run(_phasePlayer.SnapBack(before, axis, index, startOffset)));
                 return false;
             }
+            
+            if (previewKnown && !PreviewMatches(expected, before, result)) Debug.LogError("The drag preview differs from the move that was played (I5).");
 
             State = result.State;
             _run = StartCoroutine(Run(_phasePlayer.PlayMove(before, result, axis, index, startOffset, notches)));
@@ -181,15 +193,20 @@ namespace SlideJam.Game
         private void OnDragging(LineDrag drag)
         {
             _boardView.ShowLineOffset(State, drag.Axis, drag.Index, drag.Offset);
+            UpdatePreview(drag);
         }
 
         private void OnReleased(LineDrag drag)
         {
-            TryMove(drag.Axis, drag.Index, drag.Notches, drag.Offset);
+            bool known = IsPreviewFor(drag);
+            MovePreview expected = known ? _preview : null;
+            ClearPreview();
+            TryMove(drag.Axis, drag.Index, drag.Notches, drag.Offset, known, expected);
         }
 
         private void SetBusy(bool busy) 
         {
+            if (busy) ClearPreview();
             IsBusy = busy;
             _dragInput.enabled = !busy && (State == null || !State.Ended.HasValue);
         }
@@ -206,6 +223,57 @@ namespace SlideJam.Game
         private void ShowProgress(BoardState state) 
         {
             _hudView.ShowTargetsLeft(state.Seq.Length - state.Done);
+        }
+        
+        private void UpdatePreview(LineDrag drag)
+        {
+            if (_previewView == null || IsBusy || State == null) return;
+            if (IsPreviewFor(drag)) return;
+
+            _hasPreview = true;
+            _previewAxis = drag.Axis;
+            _previewIndex = drag.Index;
+            _previewNotches = drag.Notches;
+            _preview = drag.Notches == 0 ? null : MoveResolver.Preview(State, drag.Axis, drag.Index, drag.Notches);
+            _previewView.Show(_preview, State);
+        }
+
+        private bool IsPreviewFor(LineDrag drag)
+        {
+            return _hasPreview && _previewAxis == drag.Axis && _previewIndex == drag.Index && _previewNotches == drag.Notches;
+        }
+
+        private void ClearPreview()
+        {
+            _hasPreview = false;
+            _preview = null;
+            if (_previewView != null) _previewView.Clear();
+        }
+
+        private static bool PreviewMatches(MovePreview expected, BoardState before, MoveResult result)
+        {
+            Phase first = null;
+            foreach (Phase phase in result.Phases)
+            {
+                if (phase.Kind != PhaseKind.Clear) continue;
+
+                first = phase;
+                break;
+            }
+
+            if (first == null) return expected == null;
+            if (expected == null || expected.Cells.Count != first.MatchedCells.Count) return false;
+
+            int cols = before.Level.Cols;
+            var cells = new HashSet<int>();
+            foreach (Cell cell in expected.Cells) cells.Add(cell.Row * cols + cell.Col);
+            foreach (Cell cell in first.MatchedCells)
+            {
+                if (!cells.Contains(cell.Row * cols + cell.Col)) return false;
+            }
+
+            return expected.ToQueue == result.State.Queue.Count - before.Queue.Count
+                   && expected.Lose == (result.State.Ended == EndReason.QueueOverflow);
         }
         
         private IEnumerator Run(IEnumerator routine)

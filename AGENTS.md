@@ -76,7 +76,7 @@ You normally check the game **without a person at the Editor**: the engine is pl
 | Tuning values | `GameConfig` / `LevelConfig` ScriptableObjects | numbers in `DESIGN.md` §5 are read from data; a test may build a config in code |
 | Level content | `LevelConfig` | seed, target sequence (each target `{color, cap}`, `cap` 3 to 5, any number of targets), special block cells, `queueMax`, `qOpenStart`, `qGrow`; the grid never starts with a match |
 | Boosters | the engine (`MoveResolver.Hammer`, `SwapTarget`, `Stash`), `DESIGN.md` §5.9 | state carries `Seq`, `Pre` and `Vault`; the multiset of `Seq` never changes; the vault is outside the loss rule; a used booster is not refunded |
-| Theme and tutorial | a text table, art and a tutorial data asset in the view | display names only (`DESIGN.md` §9); the fruit set is strawberry, blueberry, pear, orange, plum; tutorial steps are shown once, from save data (`DESIGN.md` §5.8) |
+| Theme and tutorial | a text table, art and a tutorial data asset in the view | display names only (`DESIGN.md` §9); the fruit set is cherry, blueberry, pear, orange, plum; tutorial steps are shown once, from save data (`DESIGN.md` §5.8) |
 
 Invariants and the reasons behind them: `DESIGN.md` §2.
 

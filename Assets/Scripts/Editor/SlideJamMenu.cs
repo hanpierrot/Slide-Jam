@@ -21,6 +21,7 @@ namespace SlideJam.EditorTools
             SceneBuilder.ApplySpriteQuality();
             bool ok = OverlayBuilder.Build();
             ok &= OverflowBuilder.Build(controller);
+            ok &= PreviewBuilder.Build(controller);
             ok &= SceneBuilder.BuildArt(controller);
             if (ok) controller.PreviewLayout();
 

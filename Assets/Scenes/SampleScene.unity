@@ -122,6 +122,58 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &22206965
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 22206967}
+  - component: {fileID: 22206966}
+  m_Layer: 0
+  m_Name: Preview
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &22206966
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 22206965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20d56be2431e8e8479f957a7c17f32f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _ringWhite: {fileID: 21300000, guid: c9830bf17c044de489e2c443de55d007, type: 3}
+  _ringOrange: {fileID: 21300000, guid: 8b1d50fbfbe43f8479ee0ca1d9cb6e51, type: 3}
+  _ringWhiteColor: {r: 0.70740706, g: 0.764151, b: 0, a: 1}
+  _label: {fileID: 8403421718927558764}
+  _toQueueFormat: +{0} to the queue
+  _loseText: 'Will overflow: you lose'
+  _orange: {r: 0.96, g: 0.55, b: 0.17, a: 1}
+  _red: {r: 0.86, g: 0.22, b: 0.22, a: 1}
+--- !u!4 &22206967
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 22206965}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 781787150}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &44068861
 GameObject:
   m_ObjectHideFlags: 0
@@ -757,6 +809,7 @@ MonoBehaviour:
   _queueView: {fileID: 337179873}
   _stripView: {fileID: 1859378013}
   _endOverlay: {fileID: 1262178798}
+  _previewView: {fileID: 22206966}
   _gameManager: {fileID: 1160048238}
   _levelConfig: {fileID: 11400000, guid: f6797fbd1282c7e4b8f9962b3ce9ff12, type: 2}
   _logMoves: 1
@@ -772,7 +825,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 22206967}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &781787151
@@ -2024,6 +2078,10 @@ PrefabInstance:
       propertyPath: m_LocalPosition.y
       value: 4.6499996
       objectReference: {fileID: 0}
+    - target: {fileID: 1222084418624413272, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 1233742721652685271, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
       propertyPath: _overflow
       value: 
@@ -2109,6 +2167,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
+--- !u!114 &8403421718927558764 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3884223091816389094, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
+  m_PrefabInstance: {fileID: 8403421718927558763}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9541d86e2fd84c1d9990edf0852d74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

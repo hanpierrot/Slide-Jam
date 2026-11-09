@@ -25,6 +25,8 @@ namespace SlideJam.Game
         [SerializeField, Min(0f)] private float _slotEnterSeconds = 0.26f;
         [SerializeField, Range(0.3f, 1f)] private float _overflowUnitScale = 0.8f;
         [SerializeField, Min(0f)] private float _overflowFadeSeconds = 0.15f;
+        [SerializeField, Min(0.1f)] private float _previewPulseSeconds = 0.8f;
+        [SerializeField, Min(1f)] private float _previewPulseScale = 1.1f;
 
         [Header("Input")]
         [SerializeField, Min(0f)] private float _lockDistance = 8f;
@@ -34,6 +36,7 @@ namespace SlideJam.Game
         [SerializeField, Min(0)] private int _queueUnitBuffer = 6;
         [SerializeField, Min(1)] private int _stripVisible = 5;
         [SerializeField, Min(1)] private int _flightPoolSize = 16;
+        [SerializeField, Min(1)] private int _previewPoolSize = 49;
 
         public int CapMin => _capMin;
         public int CapMax => _capMax;
@@ -60,5 +63,9 @@ namespace SlideJam.Game
 
         public int QueueUnitBuffer => _queueUnitBuffer;
         public int StripVisible => _stripVisible;
+        
+        public float PreviewPulseSeconds => _previewPulseSeconds;
+        public float PreviewPulseScale => _previewPulseScale;
+        public int PreviewPoolSize => _previewPoolSize;
     }
 }

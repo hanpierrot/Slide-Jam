@@ -103,6 +103,9 @@ namespace SlideJam.Game
         {
             return transform.TransformPoint(UnitLocal(index));
         }
+        
+        public int ChairCount => _chairCount;
+        public float ChairSize => _chairSize;
 
         public void HideUnit(int index)
         {
