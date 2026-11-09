@@ -4,7 +4,7 @@
 **Engine:** Unity **2022.3.62f3** (LTS), 2D, built-in render pipeline, classic Input Manager · one finger: drag only · single screen
 **Platform:** target iOS and Android, portrait only (the project's default orientation is Portrait). The Editor uses the mouse through the same pointer path as touch
 **Working title:** Slide Jam (change freely; nothing in the rules depends on it) · **Theme:** "Vườn trái cây" (fruit garden), display only, §9
-**Version:** 0.9 (2026-11-05) — v0.9 marks the Phase 2 engine as built (unit routing, complete and pull, `qGrow`, overflow and win checks, the `End` phase) and aligns §5.4, §6 and §6.1 with the code: `Slot.Empty`, `Place` flights, `LevelData.Sandbox`. v0.8 records the Phase 2 decisions before they are built: the order in which a round's units are routed (§5.4), the end of a run as a nullable `Ended` field (§6.1), the extended `LevelData`, the minimal `GameConfig`, `qGrow` in Phase 2 and the stage layout (§4, §6, §7). v0.7 adds the pooled `Block` prefab to the proposed layout (§6.2). v0.6 marks the Phase 1 view (board, drag, phase player, move counter, restart) as built in the Unity project (§4, §7). v0.5 records the decisions made while writing the first engine code: the colour mapping and the separate grid stream (I4 detail), the slide direction (§5.2), the empty cell, `MoveResult`, the reduced phase kinds and the `FallStart` list (§6) and the stateless stream generator (§7). v0.4 lets each target hold 3 to 5 units and lets every level choose its number of targets (§5.1), drops the level-data, balance and measurement sections, turns the hints into a tutorial (§5.8), makes a used booster non-refundable (§5.7, §5.9) and changes the fruit set (§9). v0.3 added the third reference level, the three boosters, the theme and the vault in the resolution order. v0.2 (2026-11-02) wrote the rules from the prototypes and rewrote interfaces and implementation notes for Unity. The engine code of Phases 0 to 2 (random, board, slide, match, settle, slots, queue, complete, pull, win and loss, `Move`) is written in `Assets/Scripts/Engine/` with 70 Edit Mode tests (run by the user, all passing); the Phase 1 view (`Assets/Scripts/Game/`) runs in Play mode without errors (reported by the user); everything else on the Unity side is **[PROPOSED]**.
+**Version:** 1.0 (2026-11-09) — v1.0 changes the end of a move: the settle always runs before the run ends and a win keeps resolving until no match is left (§5.4, I9); Undo is replaced by **Revive**, which clears the queue and shuffles the grid with a seeded stream (§5.7, §5.7.1); and the Phase 2 view is recorded as built: the Stage with a `Branch` band, `ThemeSkin`, `SquarePool`, the `GameConfig` timings, `GameManager`, the HUD and the end overlay (§4, §6.2, §7, §9). v0.9 marks the Phase 2 engine as built (unit routing, complete and pull, `qGrow`, overflow and win checks, the `End` phase) and aligns §5.4, §6 and §6.1 with the code: `Slot.Empty`, `Place` flights, `LevelData.Sandbox`. v0.8 records the Phase 2 decisions before they are built: the order in which a round's units are routed (§5.4), the end of a run as a nullable `Ended` field (§6.1), the extended `LevelData`, the minimal `GameConfig`, `qGrow` in Phase 2 and the stage layout (§4, §6, §7). v0.7 adds the pooled `Block` prefab to the proposed layout (§6.2). v0.6 marks the Phase 1 view (board, drag, phase player, move counter, restart) as built in the Unity project (§4, §7). v0.5 records the decisions made while writing the first engine code: the colour mapping and the separate grid stream (I4 detail), the slide direction (§5.2), the empty cell, `MoveResult`, the reduced phase kinds and the `FallStart` list (§6) and the stateless stream generator (§7). v0.4 lets each target hold 3 to 5 units and lets every level choose its number of targets (§5.1), drops the level-data, balance and measurement sections, turns the hints into a tutorial (§5.8), makes a used booster non-refundable (§5.7, §5.9) and changes the fruit set (§9). v0.3 added the third reference level, the three boosters, the theme and the vault in the resolution order. v0.2 (2026-11-02) wrote the rules from the prototypes and rewrote interfaces and implementation notes for Unity. The engine code of Phases 0 to 2 (random, board, slide, match, settle, slots, queue, complete, pull, win and loss, `Move`) is written in `Assets/Scripts/Engine/` with 70 Edit Mode tests (run by the user, all passing); the Phase 1 view (`Assets/Scripts/Game/`) runs in Play mode without errors (reported by the user); everything else on the Unity side is **[PROPOSED]**.
 
 ---
 
@@ -26,7 +26,7 @@ A grid of coloured blocks. You **slide one row or one column** and the blocks wr
 
 You never choose what to eat. You choose **what to line up, and when**: a match of the wrong colour is a cost, a match of the right colour is progress. Every level adds obstacles (chains, seals, locked slots) that change how you plan the next slide. Three optional boosters (§5.9) help when the queue fills up.
 
-**Genre:** single-screen turn-based puzzle · **Level length:** about 20–40 slides (design target) · **Session:** instant restart, unlimited undo in the first build
+**Genre:** single-screen turn-based puzzle · **Level length:** about 20–40 slides (design target) · **Session:** instant restart; after a loss the player may Revive (there is no undo)
 
 **Why it works [design thesis].** The slide is a physical, readable action. The queue gives a visible, shrinking budget for mistakes. The skill is defensive: avoid the wrong match, not chase every match.
 
@@ -39,14 +39,14 @@ These are the load-bearing rules. Breaking any one of them breaks the game.
 | # | Rule | Why |
 |---|---|---|
 | I1 | A level is **won** when every target in its sequence (`SEQ`) is completed. It is **lost** the moment the queue holds more units than `qOpen` after a resolution step (§5.4) | The one win and the one loss. No timers, no move limit |
-| I2 | **Turn-based.** Nothing changes between inputs: no timers, no real-time pressure, no random events outside a move | The skill is planning. It also makes undo exact |
+| I2 | **Turn-based.** Nothing changes between inputs: no timers, no real-time pressure, no random events outside a move | The skill is planning. It also makes replays exact |
 | I3 | **One core verb: slide a row or a column.** A drag of any length is **one move**. A drag whose net shift is zero is not a move and costs nothing. **Boosters** (§5.9) are optional consumable actions outside the move counter: they never advance a column stream, never put units in the queue, and each runs as one atomic resolution (I8) | Keeps the game learnable in seconds and keeps the move counter honest; boosters stay a relief valve and do not become a second hidden ruleset |
 | I4 | **Deterministic.** The same level seed and the same list of moves always give the same result, including every refill colour. No hidden randomness during play | Solver and bot checks, replays, regression tests, seeded daily levels |
 | I5 | **No lies.** The next-spawn dots and the drag preview show what will really happen. Nothing the player has already seen is secretly recoloured | The player must be able to blame a loss on their own plan |
 | I6 | **Combos never punish.** A match caused by a cascade (resolution round 2 or later) can only help: units no slot accepts **vanish**. Only a match caused directly by the player's slide can put units into the queue (§5.4) | Combos are hard to foresee and long ones are random. Losing to one reads as unfair |
 | I7 | **Locks close a door, never end the run.** Every lock has an exit through normal play: a chain is removed by any match that touches it, a seal by clearing the cells around it, a locked slot by completing its neighbour, locked queue chairs by completing targets (§5.6) | The player must always be able to route around a block |
 | I8 | **Resolution is atomic.** After a slide or a booster use, all phases (§5.4) finish before the next input is accepted. Win and loss are checked at the fixed points in §5.4 and nowhere else | Overlapping animations and re-entrant input are the usual source of unrepeatable bugs |
-| I9 | **The board is always full after settling.** No empty cell survives a settle, whatever the obstacles (§5.5). The only exception is a terminal state (a loss is reported before the final settle) | Holes under chains would make cells unreachable |
+| I9 | **The board is always full after settling.** No empty cell survives a settle, whatever the obstacles (§5.5). There is no exception: the settle runs before a win or a loss is reported (§5.4) | Holes under chains would make cells unreachable |
 | I10 | All tuning values live in data, never in view or input code | The last hours of a project are for tuning, not refactoring |
 | I11 | **Every shipped level is solvable** | A level nobody can win is a bug, not a difficulty setting. **[PROPOSED]**: the way solvability is checked (a bot or a solver run on the Unity engine) is chosen when the engine exists |
 
@@ -98,21 +98,21 @@ These are the load-bearing rules. Breaking any one of them breaks the game.
 
 ## 4. Board objects and HUD
 
-The screen is one portrait layout on a reference width of **360 logical units**, top to bottom: target slots, next strip, queue and vault, next-spawn dots, grid, booster bar, undo and restart. Cell size is 54 for a 6×6 grid and 48 for 7×7 (§5.1). The layout is a view decision; the engine does not depend on it. **Built:** the board is drawn with sprites under an orthographic camera fitted to the grid width (`CameraFit`, margin 0.5 cell), and the HUD is a uGUI canvas with a Canvas Scaler at 360 × 640 matching width. **[PROPOSED, Phase 2]** The world-space part of the layout is a **Stage**: one parent object whose children are anchor roots (`Slots`, `Strip`, `Queue`, `Grid`) placed at fixed offsets in cell units, so the camera can fit the Stage's whole bounds (width first, then height) instead of the grid alone. The slot, strip and queue views are drawn under their anchors; the HUD and the buttons stay in the uGUI canvas.
+The screen is one portrait layout on a reference width of **360 logical units**, top to bottom: target slots, next strip, queue and vault, next-spawn dots, grid, booster bar, restart. Cell size is 54 for a 6×6 grid and 48 for 7×7 (§5.1). The layout is a view decision; the engine does not depend on it. **Built:** the board is drawn with sprites under an orthographic camera fitted to the grid width (`CameraFit`, margin 0.5 cell), and the HUD is a uGUI canvas with a Canvas Scaler at 360 × 640 matching width. **Built (Phase 2):** the world-space part of the layout is a **Stage**: one parent object whose children are anchor roots (`Slots`, `Strip`, `Queue`, `Overflow`, `Branch`, `Grid`), stacked top to bottom by `StageLayout.Apply(rows, cols)` in cell units (the band heights and the gap are serialized on `StageLayout`; `Overflow` is an optional band under the queue that holds the units past the last chair, and the queue is lifted by `queueLift` into the gap above it; `Branch` is an optional decoration band between the overflow band and the grid, where the next-spawn dots will hang). `Apply` returns the world rectangle that `CameraFit.Fit(Rect)` fits (width first, then height, with a top and a bottom padding). The slot, strip and queue views draw sprites under their anchors from the state (§7), with art from a `ThemeSkin` asset (§9). The HUD (level number, targets left), the Restart button and the end overlay are in the uGUI canvas.
 
 | Object | Role |
 |---|---|
 | **Target slots** ×3 | The slots currently asking for blocks. Each shows its colour, a count `n/cap` and `cap` pips (3 to 5, set per target). Filling the last pip completes it (§5.4) |
 | **Next strip** | The targets still to come, so the player can plan ahead. A target that already holds banked units (after a swap, §5.9) shows the number |
-| **Queue** | A row of `queueMax` chairs (5 or 6). A level with `qGrow` opens only the first `qOpen` (3 at the start); the rest show a padlock. Shows `n/qOpen` |
+| **Queue** | A row of `queueMax` chairs (5 or 6). A level with `qGrow` opens only the first `qOpen` (3 at the start); the rest show a padlock. Shows `n/qOpen`. A unit past the last chair (only the move that loses has them) stands on a small plank under the queue, the **overflow row**, drawn smaller (`overflowUnitScale`); the plank fades in only while such a unit exists |
 | **Vault** | Next to the queue. Shows the units stored by the Stash booster (§5.9) in **two separate rows of five**, filled left to right and then top to bottom; the label carries the full count, and a unit past the tenth is counted but not drawn |
 | **Next-spawn dots** | Two small blocks above each column: the next two colours that column will spawn (I5) |
 | **Grid** | 6×6 (Levels 1 and 2) or 7×7 (Level 3), per `LevelConfig`. Edge markers (red bars) show which rows and columns are locked |
-| **HUD** | Slide count and targets left (built so far: the slide count and a Restart button, with placeholder English text) |
+| **HUD** | The level number and the targets left at the top (built, placeholder English text); the slide count is no longer shown |
 | **Booster bar** | Three buttons (§5.9). Each shows what it will do, or why it is off |
-| **Undo / Restart** | Two buttons under the grid. Both are disabled while a resolution is playing |
+| **Restart** | A button under the grid (built). There is no Undo; after a loss the overlay offers Revive (§5.7) |
 | **Tutorial** | A short overlay with a highlight, shown at the start of the game and the first time a mechanic or booster appears (§5.8) |
-| **Overlay** | Win / loss card with Undo (loss only) and Restart |
+| **Overlay** | Win / loss card (built): Restart; on a loss also Revive while it is available (§5.7) |
 
 ### 4.1 Input
 
@@ -197,9 +197,10 @@ After a valid slide the engine runs these phases in order, and repeats from `cle
 | 2 | `clear` (round *n*) | Find matches. **Chains:** every chained block inside a matched cell or next to one (4 neighbours) loses one layer (§5.6). **Seals:** every sealed block next to a consumed cell loses 1 (§5.6). **Units:** every consumed block gives 1 unit (2 for a ×2 block), placed by the rule below. The consumed cells become empty |
 | 3 | `complete` (0 or more) | Every slot whose `count` has reached its own `cap` is completed (see below), one at a time |
 | 4 | `pull` (0 or 1 after each completion) | Units waiting in the vault (first) and then in the queue move into slots that accept them |
-| 5 | overflow check | If the queue holds more than `qOpen` units: **loss** (`QueueOverflow`) and the move ends |
-| 6 | win check | If every slot is empty: **win** and the move ends |
-| 7 | `fall` | Settle and refill (§5.5) |
+| 5 | overflow check | If the queue holds more than `qOpen` units: the run is **lost** (`QueueOverflow`). `Ended` is set now; the move stops after the settle (phase 7) |
+| 6 | win check | If every slot is empty: the run is **won**. `Ended` is set now and the move keeps resolving rounds until no match is left (every later unit vanishes, I6) |
+| 7 | `fall` | Settle and refill (§5.5). It **always runs**, also in the round that decided the end, so the board is full when the result is shown (I9) |
+| 8 | `end` | Only when `Ended` is set and no round is left: an `End` phase carrying the reason. After a loss the move stops right after its `fall`: no further round runs, so a lost board may still contain a match |
 
 **Where a unit goes** (in this order):
 
@@ -213,7 +214,7 @@ A ×2 block gives two separate units; each goes through the three steps on its o
 
 **Completing a slot** (`complete`): the completed count goes up by one; the slot is replaced by the next target of `sequence` (or becomes empty when the sequence is finished); a **locked neighbour slot** (index ± 1) opens; if the level has `qGrow`, `qOpen` goes up by one (up to `queueMax`). Then `pull` runs: the vault is scanned first, then the queue, each from the first unit to the last, and every unit that a slot now accepts (rule 1 above) flies to that slot, the rest keep their order. A pull can fill another slot, which then completes in turn, and so on until nothing is full.
 
-**Check points.** The overflow check happens after the completions of a round and before the settle. The queue can exceed `qOpen` *inside* a round (units are added before the completions run); only the state after the completions counts. A completion that opens a queue chair and pulls units out can therefore rescue a move.
+**Check points.** The overflow check happens after the completions of a round and before the settle, and the settle still runs after a loss or a win. The queue can exceed `qOpen` *inside* a round (units are added before the completions run); only the state after the completions counts. A completion that opens a queue chair and pulls units out can therefore rescue a move.
 
 ### 5.5 Settle: falling and sand flow [BUILT in the prototype, Level 3]
 
@@ -255,9 +256,13 @@ Each mechanic is a property of a block or a slot. **Level 3 uses all of them. Le
 | `Win` | Win | Every slot is empty after a completion (§5.4 step 6) |
 | `QueueOverflow` | Loss | The queue holds more than `qOpen` units at the overflow check (§5.4 step 5) |
 
-Ending texts are display strings (§9): a win card with the number of slides, a loss card with a one-line reason and an **Undo** button. There is no move limit and no timer (I2).
+Ending texts are display strings (§9): a win card with the number of slides, a loss card with a one-line reason and a **Revive** button next to Restart. There is no move limit and no timer (I2). A run ends only after the settle, so the board shown with the result is full (I9). A win also resolves every match that its refill creates, so no match is left on screen.
 
-**Undo.** The first build keeps an unlimited stack of earlier states, one per valid move. Undo restores the state before the last move (including the refill stream positions, so the same move gives the same result, I4). The snapshot contains the vault, `Seq` and `Pre` (§5.9), so undoing a booster action takes back its effect on the board, but **a used booster is never refunded**: the player's booster count is not part of the snapshot, and undo, restart and losing do not give it back. Restart clears the stack. **[PROPOSED]** limit or monetise undo in the product build.
+**Revive** replaces Undo **[BUILT]**. It is not a move and exists only after `QueueOverflow` (`MoveResolver.Revive` refuses any other state). It clears the whole queue, sets `Ended` to null and **shuffles the grid** (§5.7.1). Everything else stays: the move counter, the slots and targets (`Seq`, `SeqI`, `Done`, `Pre`), `QOpen`, the vault and the stream pointers. It never advances a stream and never puts a unit in the queue, and it can be used again after the next loss. **The first build has no limit** (`GameController.CanRevive` is always true); a limit, a price or a currency is a product setting that will live in `GameConfig`, like the booster prices (§5.9). There is no undo and no stack of earlier states; `Clone` and `Hash` stay for the preview and for tests. A used booster is never refunded (§5.9).
+
+### 5.7.1 The Revive shuffle [BUILT]
+
+A random effect with its own stream (I4). The blocks of the grid keep their ids and colours and are permuted over the cells. The seed is `Level.Seed + Moves × 104729 + 1` (`uint` arithmetic). A Fisher–Yates pass runs over the cells in row-major order with `Mulberry32.At(seed, draw)`, taking `j = (value × (i + 1)) >> 32`; the draw index keeps counting across attempts. A candidate that contains a match is rejected and the next permutation is drawn from the same stream, up to 100 attempts; if all 100 contain a match the last one is kept (only possible on a tiny grid). Two revives cannot share a `Moves` value, because a move happens between them. The shuffle moves no column stream pointer. Special blocks (Phase 4) will stay in place and only plain blocks will be shuffled **[PROPOSED]**. The constants live in `Shuffler`.
 
 ### 5.8 Tutorial
 
@@ -266,7 +271,7 @@ The game teaches through a **tutorial**, not through rule text. A tutorial step 
 1. **At the start of the game**: the first time the game is launched, before Level 1.
 2. **Each time a new mechanic or booster opens**: the first time a level contains the mechanic, or the first time the booster is offered.
 
-Each step is shown **once** and recorded in the player's save data, not in the engine state, so determinism and undo are unaffected (I4). Showing a step is not a move and changes nothing in the game (I2); input is ignored while it is open. Steps are listed by `TutorialId` in a data asset (I10); `TutorialId` values are append-only. The text lives in the text table (§9). A booster button that is off shows the reason on the button itself; that is part of the button, not a tutorial step.
+Each step is shown **once** and recorded in the player's save data, not in the engine state, so determinism is unaffected (I4). Showing a step is not a move and changes nothing in the game (I2); input is ignored while it is open. Steps are listed by `TutorialId` in a data asset (I10); `TutorialId` values are append-only. The text lives in the text table (§9). A booster button that is off shows the reason on the button itself; that is part of the button, not a tutorial step.
 
 | `TutorialId` | Shown | Content (English draft; the game shows it in Vietnamese) |
 |---|---|---|
@@ -288,9 +293,9 @@ Each step is shown **once** and recorded in the player's save data, not in the e
 
 ### 5.9 Boosters [BUILT in the prototype; economy PROPOSED]
 
-Three optional, consumable actions. They are **not moves** (the slide counter does not change), they never advance a column stream, they **never put a unit in the queue**, and each runs as one atomic resolution (I3, I4, I8). Their effect on the board is part of every snapshot, so undo takes the effect back, but not the use (§5.7). They are display-named in §9; the code names below are the contract.
+Three optional, consumable actions. They are **not moves** (the slide counter does not change), they never advance a column stream, they **never put a unit in the queue**, and each runs as one atomic resolution (I3, I4, I8). Their effect on the board is part of every snapshot, so the state stays exact; the use itself is never taken back (§5.7). They are display-named in §9; the code names below are the contract.
 
-**Economy.** A booster use is bought and spent: a player may use as many as they own, there is no per-level cap, and a used booster is never refunded (not by undo, restart or a loss, §5.7). Prices, the currency and any free uses are product settings and live in `GameConfig`. The prototype gives unlimited uses, so its play says nothing about how often boosters will be used.
+**Economy.** A booster use is bought and spent: a player may use as many as they own, there is no per-level cap, and a used booster is never refunded (not by restart, Revive or a loss, §5.7). Prices, the currency and any free uses are product settings and live in `GameConfig`. The prototype gives unlimited uses, so its play says nothing about how often boosters will be used.
 
 | Booster | Code name | Rule |
 |---|---|---|
@@ -310,6 +315,7 @@ The engine of Phase 0 and Phase 1 exists in `Assets/Scripts/Engine/` (rows liste
 |---|---|
 | `BoardState.New(LevelData)` | A new level state: grid, stream pointers, counters, the first `ActiveSlots` slots taken from `Seq` (`Pre` of zeros), an empty queue and vault, `QOpen = QOpenStart`, `Ended = null`. `Seq`, `Pre` and `Vault` are in the state (and in `Clone` and `Hash`) so they do not change again with the boosters of Phase 5; the vault stays empty until then |
 | `MoveResolver.Move(state, axis, index, notches) → MoveResult` | Apply a slide to a **copy**; returns `{ Ok, State, Phases }`. `Ok` is false for a zero shift, a locked line or a finished run; a refused move returns the input state unchanged and no phases |
+| `MoveResolver.Revive(state) → MoveResult` | **[BUILT]** Revive after a loss (§5.7): `Ok` is false unless `Ended == QueueOverflow`; otherwise a new state with an empty queue, `Ended = null` and a shuffled grid (§5.7.1), and one `Revive` phase |
 | `MoveResolver.Preview(state, axis, index, notches) → Preview?` | The drag preview (§4.2): `{ Cells, ToQueue, Lose }`, or `null` when nothing matches. It calls `Move` on a copy |
 | `Board.Shift(grid, axis, index, k)` · `Board.ShiftAmount(notches, step, length)` · `Board.LineLength(level, axis)` · `Board.FloorMod` | The slide on a raw grid · `k = floorMod(notches × step, length)` · the length of a line |
 | `Board.LineLocked(state, axis, index)` | Whether a row or column can be slid (§5.2) |
@@ -319,7 +325,7 @@ The engine of Phase 0 and Phase 1 exists in `Assets/Scripts/Engine/` (rows liste
 | `MoveResolver.Stash(state) → MoveResult` | Booster §5.9. `Ok` is false for an empty queue |
 | `Matcher.Find(grid) → List<Cell>` · `Matcher.HasMatch(grid)` | Every cell of every run of `Matcher.MinRun` (3) or more, each once, in row-major order |
 | `ColumnStream.At(seed, column, index, colors)` · `Mulberry32.At(seed, index)` | The colour of a column's `index`-th spawn (used for the next-spawn dots) · the raw stream value |
-| `BoardState.Clone()` | Deep copy used for snapshots and undo |
+| `BoardState.Clone()` | Deep copy used for snapshots, the preview and tests |
 | `BoardState.Hash()` | A stable hash of the whole state (including stream pointers) for determinism tests |
 
 The stream generator is `mulberry32` in `uint` arithmetic with wrap-around (`unchecked`), so one seed gives the same colours on every platform. No `float`, no `System.Random`.
@@ -341,38 +347,57 @@ The stream generator is `mulberry32` in `uint` arithmetic with wrap-around (`unc
 | `Swap` | `Slot`, `Color`, `From` (the displaced colour) |
 | `Stash` | `Flights` (queue to vault) |
 | `Fall` | `Starts`: a list of `FallStart {Id, From}` for every block that moved or spawned, in row-major order of its final cell (a list, so the order never depends on a dictionary). `From.Row` is negative for a block spawned above the grid |
-| `End` | `Reason` (`EndReason`: `Win` or `QueueOverflow`); the final state has `Ended` set to the same value |
+| `End` | `Reason` (`EndReason`: `Win` or `QueueOverflow`); the final state has `Ended` set to the same value; always the last phase of a finished move |
+| `Revive` | `Flights` (grid to grid, one per block that changed cell), `Vanished` (the number of units removed from the queue) |
 
-**Built (Phases 1 and 2):** `PhaseKind` is `Shift`, `Clear`, `Fall`, `Complete`, `Pull`, `End` (append-only; `Swap` and `Stash` join at the end in Phase 5). A move is `Shift`, then per round `Clear`, then for each completion a `Complete` followed by a `Pull` only if some unit moved, then `Fall`. `Clear` carries `Round`, `MatchedCells`, `Flights` and `Vanished`; its snapshot already holds the routed units and the emptied cells. A win or a loss is checked after the completions of a round (overflow first, then win); it sets `Ended`, adds an `End` phase carrying `Reason` and ends the move with no `Fall`, so the board may contain empty cells (I9). `Move` refuses a state whose `Ended` is not null. `Phase` is one class with the fields of this table; fields that do not belong to its kind are empty (`Reason` is null outside `End`).
+**Built (Phases 1 and 2):** `PhaseKind` is `Shift`, `Clear`, `Fall`, `Complete`, `Pull`, `End`, `Revive` (append-only; `Swap` and `Stash` join at the end in Phase 5). A move is `Shift`, then per round `Clear`, then for each completion a `Complete` followed by a `Pull` only if some unit moved, then `Fall`. `Clear` carries `Round`, `MatchedCells`, `Flights` and `Vanished`; its snapshot already holds the routed units and the emptied cells. A win or a loss is checked after the completions of a round (overflow first, then win); it sets `Ended`, the round's `Fall` still runs, and then the move either stops (a loss) or keeps resolving rounds until no match is left (a win). An `End` phase carrying `Reason` is always the last phase of a finished move, so the board is full (I9). `Move` refuses a state whose `Ended` is not null. `Phase` is one class with the fields of this table; fields that do not belong to its kind are empty (`Reason` is null outside `End`).
 
 A **flight** is `Flight {Color, From, To}` where `From` and `To` are a `Place {Kind, A, B}`: `Grid` (A = row, B = column), `Slot` (A = slot, B = pip), `Queue` (A = index), `Vault` (A = index) or `Vanish`. `From` is `Grid` for a unit leaving a cleared block and `Queue` or `Vault` for a pulled one, with the index it had in that list before the pull. Within a `Clear`, flights are in the routing order of §5.4.
 
 **State shape.** `Grid[r, c]` is a `Block` struct `{Id, Kind (Normal | Dual), Color | Colors, X2, Spring, Chain, Seal}` (Phase 1 has `Id` and `Color` only); an empty cell is `Id == 0` and real ids start at 1; `Slots[i]` is `Slot.Empty` (`Cap == 0`) or `Slot {Color, Cap, Count, Locked}` (`Locked` is always false until Phase 4); the rest is `Queue`, `Vault`, `QOpen`, `Seq` (entries `{Color, Cap}`), `Pre`, `SeqI`, `Ptr[]`, `Moves`, `Done`, `Ended` (`EndReason?`, null while the run goes on), `NextId`. `LevelData` carries `ActiveSlots`, `QueueMax`, `QOpenStart`, `QGrow`, `Seq` and, from Phase 4, `LockedSlot` and the special blocks; `SwapMin` comes from `GameConfig`.
 
-### 6.2 Proposed project layout
+### 6.2 Project layout [built]
 
 ```
-Assets/Scripts/Engine/   assembly SlideJam.Engine
+Assets/Scripts/Engine/   assembly SlideJam.Engine (pure C#)
   Rng/                   Mulberry32, ColumnStream
-  Board/                 Block, Axis, Cell, Target, Slot, EndReason, LevelData, BoardState, Board, Matcher, GridGenerator
-  Moves/                 PhaseKind, Phase, FallStart, Place, Flight, MoveResult, MoveResolver, Resolution, SandSettler
-Assets/Scripts/Game/     assembly SlideJam.Game: GameController (the one wired root), BoardView, BlockView, DragInput, PhasePlayer, HudView, CameraFit, config ScriptableObjects (`GameConfig`, `LevelConfig`, with the conversion to `LevelData`); Phase 2 adds SlotView, QueueView, the end overlay
-Assets/Prefabs/          Block.prefab (the pooled block view)
-Assets/Design/           GameConfig.asset, Levels/LevelConfig_*.asset
-Assets/Tests/EditMode/   assembly SlideJam.Tests.EditMode (Rng/, Board/, Moves/): rules, invariants, determinism
-Assets/Tests/PlayMode/   a real drag against the engine's prediction
+  State/                 Block, Axis, Cell, Target, Slot, EndReason, LevelData, BoardState
+  Rules/                 Board, Matcher, GridGenerator, SandSettler, Resolution, Shuffler
+  Moves/                 PhaseKind, Phase, FallStart, Place, Flight, MoveResult, MoveResolver
+Assets/Scripts/Game/     assembly SlideJam.Game
+  Core/                  GameController (the scene's composition root), GameManager (singleton that holds GameConfig)
+  Config/                GameConfig, LevelConfig, LevelConverter
+  Board/                 BoardView, BlockView, BlockPool
+  Targets/               SlotsView, QueueView, StripView, SquarePool
+  Playback/              PhasePlayer
+  Input/                 DragInput, LineDrag
+  Layout/                StageLayout, CameraFit
+  Theme/                 ThemeSkin
+  UI/                    HudView, EndOverlayView
+Assets/Scripts/Editor/   assembly SlideJam.Editor (Editor only): SlideJamMenu (the two menus Setup Scene and Refresh Layout), SceneBuilder, OverlayBuilder, OverflowBuilder (the code the menus run to wire the scene)
+Assets/Prefabs/          Block, Board, Stage
+Assets/Design/           ThemeSkin.asset
+Assets/Resources/Configs/ GameConfig.asset, LevelConfig_*.asset
+Assets/Art/Sprites/      the sprite pack (basket, board, booster, fruits, queue, scene, shelf, ui)
+Assets/Tests/EditMode/   assembly SlideJam.Tests.EditMode (Engine/, Game/, Helpers/): rules, invariants, determinism, config, layout, pools
+Assets/Tests/PlayMode/   [planned] a real drag against the engine's prediction
 ```
 
 ---
 
 ## 7. Implementation notes
 
-- **Animation [BUILT for Shift, Clear and Fall].** The view plays the phase list one phase at a time and does not decide anything. Starting timings from the prototypes: match pulse 170 ms, a unit's flight 360 ms plus 38–40 ms stagger per unit, slot pop and slot enter 260 ms each, settle `160 + 90 × longest distance` ms, drag snap 130 ms, floating labels 900 ms. They are serialized fields on `PhasePlayer` for now and belong in `GameConfig` (I10). `Clear` is a scale pulse of the matched blocks (1.15 at the middle, 0 at the end); `Fall` moves each block of `Starts` from its start cell, with a smooth-step curve. After the last phase `BoardView.Matches` checks the screen against the state and `ShowState` redraws it.
-- **Targets and queue during a flight.** While units fly, the slots and the queue are drawn from the state *before* the phase, and the new state appears when the flight ends, so a pip fills when its block lands, not when it leaves.
+- **Animation [BUILT for Shift, Clear, Complete, Pull, Fall and Revive].** The view plays the phase list one phase at a time and does not decide anything. Starting timings from the prototypes: match pulse 170 ms, a unit's flight 360 ms plus 38–40 ms stagger per unit, slot pop and slot enter 260 ms each, settle `160 + 90 × longest distance` ms, drag snap 130 ms, floating labels 900 ms. All of them live in `GameConfig` (Feel): snap, snap back, clear, pulse, fall, revive, `flightSeconds` 0.36, `flightStaggerSeconds` 0.04, `flightEndScale` 0.45, `slotPopSeconds` 0.26, `slotPopScale` 1.12, `slotEnterSeconds` 0.26 and the overflow row's `overflowUnitScale` 0.8 and `overflowFadeSeconds` 0.15. `Clear` is a scale pulse of the matched blocks (1.15 at the middle, 0 at the end); `Fall` moves each block of `Starts` from its start cell, with a smooth-step curve. After the last phase `BoardView.Matches` checks the screen against the state and `ShowState` redraws it.
+- **Revive [BUILT].** The blocks that changed cell fly from their old cell to the shuffled one (`Phase.Flights`); the queue is redrawn empty by `GameController.ShowAll`.
+- **Slot, strip and queue views [BUILT].** Each draws from the state with `SquarePool`s: scene objects named `Pool_<name>` under the view's anchor. The editor menus *Setup Scene* and *Refresh Layout* (through `GameController.PreviewLayout`) create them in Edit Mode, so they are saved in the scene or the Stage prefab; at run time a pool adopts the objects that exist and `Build` only adds what is missing (queue units are warmed to `queueMax + queueUnitBuffer`), and `Show` only sets sprite, position, scale, colour and active state. The positions of baskets, pips, chairs, units and chips are public (`SlotWorld`, `PipWorld`, `ChairWorld`, `UnitWorld`, `ChipWorld`) for the flights of Phase 2 task 9.
+- **Configuration [BUILT].** `GameManager` (a scene singleton) holds `GameConfig`. `GameController` reads it through a serialized reference, so it also works in Edit Mode, passes it to `PhasePlayer` and `DragInput`, and passes the capacity values to the views' `Build`; the views never call the singleton. `GameConfig` holds the rule limits, the animation timings, the input values and the capacity buffers; `ThemeSkin` holds the palette and the basket layout ratios; the layout metrics stay on the scene components.
+- **Targets and queue during a flight [BUILT].** While units fly, the slots and the queue are drawn from the state *before* the phase, and each change appears when its unit lands: a pip fills, or a queue place is drawn, one unit at a time (the player keeps its own copy of the state and applies the flights to it), so a pip fills when its block lands, not when it leaves. A pulled unit leaves its queue place when its flight starts. A `Vanish` flight shrinks in place; flights from or to the vault have no view until Phase 5. After the flights the slots and the queue are redrawn from the phase's own state, so a flight can never leave them different from the engine's state.
+- **Complete and Pull [BUILT].** `Complete`: the full slot pops (scale 1, `slotPopScale`, 1), is redrawn with its next target and enters (0 to 1); the strip and the "targets left" text update at that moment. `Pull`: queue units fly into the slots that now accept them, then the queue closes up.
+- **Overflow row [BUILT].** Queue indices from `queueMax` on are drawn on the `Overflow` anchor, in fixed places (a unit never moves when another arrives, I5), scaled by `overflowUnitScale`; the row is at most `queueUnitBuffer` units wide. Only the move that loses has such units; Revive empties the queue and the plank fades out. The flights use the same position function (`QueueView.UnitWorld`), so they land on the plank.
 - **Input [BUILT].** One pointer path for mouse and touch using the classic Input Manager (`Input.GetMouseButton*` / `Input.touches`); the Input System package is not installed. Input is ignored while a phase list is playing (I8).
 - **Preview cost.** The preview runs a full resolution on a copy at every pointer move. It is small on 7×7. Cache it per notch count if it shows up in a profile.
-- **Tests [PROPOSED].** Edit Mode (Unity Test Framework): a rule test per mechanic, the invariants (I4 same seed and moves give the same `Hash()`, I5 preview equals result, I9 no hole after a non-terminal move), a direct sand-flow test (a chain block stays put and the cells under it are refilled), a cap test (targets of 3, 4 and 5 units complete at exactly their own `cap`), a booster test (after any booster use: no hole, the multiset of `Seq` unchanged, `(Seq.Length − SeqI) + open slots = total − Done`, no stream pointer moved, no unit added to the queue, undo restores the board state exactly and does not refund the use). Play Mode: a real drag on the board compared with the engine's prediction for the same move, including a spring line.
-- **Determinism.** Snapshots are value copies of `BoardState`, so undo restores the stream pointers and a replay of the move list is exact (I4). Do not use `Dictionary` or `HashSet` iteration order, or `float` maths, in anything that decides a rule.
+- **Tests [PROPOSED].** Edit Mode (Unity Test Framework): a rule test per mechanic, the invariants (I4 same seed and moves give the same `Hash()`, I5 preview equals result, I9 no hole after any move, the one that ends the run included), a direct sand-flow test (a chain block stays put and the cells under it are refilled), a cap test (targets of 3, 4 and 5 units complete at exactly their own `cap`), a booster test (after any booster use: no hole, the multiset of `Seq` unchanged, `(Seq.Length − SeqI) + open slots = total − Done`, no stream pointer moved, no unit added to the queue, an earlier held state is unchanged and the use is not refunded). Play Mode: a real drag on the board compared with the engine's prediction for the same move, including a spring line.
+- **Determinism.** Snapshots are value copies of `BoardState`, so a held earlier state restores the stream pointers and a replay of the move list is exact (I4). Do not use `Dictionary` or `HashSet` iteration order, or `float` maths, in anything that decides a rule.
 
 **Hazards — standing conventions**
 
@@ -415,6 +440,8 @@ Use these exact terms in code, commits and agent prompts.
 | **Pull** | Moving queue units into slots after a completion |
 | **Vanish** | A cascade unit that no slot accepts disappears (I6) |
 | **Overflow** | The queue holding more than `qOpen` units at the overflow check; the only loss |
+| **Revive** | The action offered after a loss that clears the queue and shuffles the grid (§5.7); not a move |
+| **Shuffle** | The seeded permutation of the grid's blocks that Revive performs (§5.7.1) |
 | **Settle** | Falling, sand flow and refill after blocks are consumed (§5.5) |
 | **Sand flow** | A block diagonally sliding past a chain block instead of stacking on it |
 | **Stream** | A column's fixed, seeded list of colours that it spawns, one per refill |
@@ -459,10 +486,12 @@ The theme changes **display strings, art and layout details only**. Code, tests,
 
 **Fruit set.** Colour 0 **strawberry** (red), 1 **blueberry** (blue), 2 **pear** (green), 3 **orange** (orange), 4 **plum** (purple). Display names: Dâu tây, Việt quất, Lê, Cam, Mận. The art assets for these five already exist and may be replaced later; colour numbers 0–4 are the identity of a colour and the fruit is only its skin, so a replacement changes assets and the text table, not the engine. The five fruits must still differ in silhouette as well as hue (§5.1); this is not yet checked for the current assets, so check it with a simulated colour-vision deficiency once the assets are final.
 
+**Art pack [BUILT, provisional].** The sprite pack in `Assets/Art/Sprites` (fruits, baskets, board panel and vines, queue, shelf, UI, scene) is wired through a `ThemeSkin` asset (`Assets/Design/ThemeSkin.asset`) by the *Slide Jam > Build Scene Art* editor menu. The pack's fruits are **cherry, blueberry, pear, orange and plum**: colour 0 currently shows the **cherry**, not the strawberry named above. **[OPEN]** the team has not confirmed the change; until it does, the fruit set above is the design and the pack is the build.
+
 **Art decisions [PROVISIONAL].** The view keeps the earlier concept for now and may change it when suitable real assets are found. Nothing in the engine depends on it.
 
 - **Baskets** are seen from above: 106×84 units, three visible inner walls (top, left, right) with depth shading, a label pill on the front rim (fruit icon and `n/cap`), a lining tinted by the fruit with a coloured inner edge, dashed rings and a faint fruit for empty places, vines and a padlock when locked, a gold outline when full.
 - **Blocks** sit on cream tiles. A sealed block is the faded fruit with a dashed outline and a number badge; a chain is green vines across the block (crossing for `both`, along the row or column for `row` and `col`) with a layer badge above 1; ×2 is two small fruits and a badge; dual is split diagonally; a spring has a coil badge.
-- **Queue** is a wooden tray; a locked chair is tied with a vine knot. The **vault** is a wooden bin (two rows of five, §4). The next-spawn dots hang on a branch above the grid, the nearer one larger.
+- **Queue** is a wooden tray; a locked chair is tied with a vine knot. Units past the last chair stand on a small plank under it (the shelf plank sprite, reused). The **vault** is a wooden bin (two rows of five, §4). The next-spawn dots hang on a branch above the grid, the nearer one larger.
 - **One background for all levels**, with light decoration only (drifting clouds, swaying leaves). Rounded fonts (Nunito for text, Fredoka for headings).
 - **No sound** yet.

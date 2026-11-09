@@ -15,6 +15,10 @@ namespace SlideJam.Game
         [SerializeField] private float _basketOffsetY = -0.2f;
         [SerializeField] private Color _emptyColor = new Color(0.22f, 0.22f, 0.22f);
         [SerializeField] private Color _pipOffColor = new Color(0f, 0f, 0f, 0.4f);
+        private readonly List<Transform> _popItems = new List<Transform>();
+        private readonly List<Vector3> _popPositions = new List<Vector3>();
+        private readonly List<Vector3> _popScales = new List<Vector3>();
+        private Vector3 _popOrigin;
 
         private SquarePool _shadows;
         private SquarePool _backs;
@@ -88,7 +92,7 @@ namespace SlideJam.Game
             Vector3 center = SlotLocal(slot);
             if (Skinned)
             {
-                ThemeSkin.BasketLayout layout = _skin.Basket; // changed from here: the ratios come from the skin
+                ThemeSkin.BasketLayout layout = _skin.Basket;
                 float pitch = _basketWidth * layout.InteriorWidth / cap;
                 return new Vector3(center.x + (pip - (cap - 1) / 2f) * pitch, center.y + _basketWidth * layout.PipY, 0f);
             }
@@ -104,6 +108,77 @@ namespace SlideJam.Game
         public Vector3 PipWorld(int slot, int pip, int cap)
         {
             return transform.TransformPoint(PipLocal(slot, pip, cap));
+        }
+        
+        public void BeginPop(int slot)
+        {
+            _popItems.Clear();
+            _popPositions.Clear();
+            _popScales.Clear();
+            _popOrigin = SlotLocal(slot);
+
+            CollectPop(_shadows, slot);
+            CollectPop(_backs, slot);
+            CollectPop(_fronts, slot);
+            CollectPop(_locks, slot);
+            for (int k = 0; k < _maxCap; k++)
+            {
+                int index = slot * _maxCap + k;
+                CollectPop(_pipSlots, index);
+                CollectPop(_fruits, index);
+            }
+        }
+        
+        public void SetPop(float factor)
+        {
+            for (int i = 0; i < _popItems.Count; i++)
+            {
+                _popItems[i].localPosition = _popOrigin + (_popPositions[i] - _popOrigin) * factor;
+                _popItems[i].localScale = _popScales[i] * factor;
+            }
+        }
+
+        public void EndPop()
+        {
+            SetPop(1f);
+            _popItems.Clear();
+            _popPositions.Clear();
+            _popScales.Clear();
+        }
+        
+        public bool Matches(BoardState state)
+        {
+            if (!Skinned) return true;
+
+            for (int i = 0; i < _slotCount; i++)
+            {
+                Slot slot = i < state.Slots.Length ? state.Slots[i] : Slot.Empty;
+                SpriteRenderer shadow = _shadows.Peek(i);
+                bool shown = shadow != null && shadow.gameObject.activeSelf;
+                if (shown == slot.IsEmpty) return false;
+
+                int filled = 0;
+                for (int k = 0; k < _maxCap; k++)
+                {
+                    SpriteRenderer fruit = _fruits.Peek(i * _maxCap + k);
+                    if (fruit != null && fruit.gameObject.activeSelf) filled++;
+                }
+
+                int expected = slot.IsEmpty || slot.Locked ? 0 : slot.Count;
+                if (filled != expected) return false;
+            }
+
+            return true;
+        }
+        
+        private void CollectPop(SquarePool pool, int index)
+        {
+            SpriteRenderer square = pool?.Peek(index);
+            if (square == null || !square.gameObject.activeSelf) return;
+
+            _popItems.Add(square.transform);
+            _popPositions.Add(square.transform.localPosition);
+            _popScales.Add(square.transform.localScale);
         }
         
         private void ShowFlat(BoardState state)

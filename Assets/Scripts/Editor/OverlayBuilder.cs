@@ -12,14 +12,14 @@ namespace SlideJam.EditorTools
         private const string Sprites = "Assets/Art/Sprites/";
         private static readonly Color Ink = new Color32(82, 51, 79, 255);
 
-        [MenuItem("Slide Jam/Build End Overlay")]
-        public static void Build()
+        // The end overlay card and its wiring. Run by the Setup Scene menu (SlideJamMenu).
+        internal static bool Build()
         {
             var view = Object.FindObjectOfType<EndOverlayView>(true);
             if (view == null)
             {
-                Debug.LogError("Build End Overlay: no EndOverlayView in the open scene.");
-                return;
+                Debug.LogError("Setup Scene: no EndOverlayView in the open scene.");
+                return false;
             }
 
             GameObject root = view.gameObject;
@@ -77,7 +77,7 @@ namespace SlideJam.EditorTools
 
             panel.gameObject.SetActive(false);
             EditorSceneManager.MarkSceneDirty(root.scene);
-            Debug.Log("Build End Overlay: done. Save the scene (Ctrl+S).");
+            return true;
         }
 
         private static Button MakeButton(Transform parent, string name, string text)

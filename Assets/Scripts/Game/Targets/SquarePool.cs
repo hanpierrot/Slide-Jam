@@ -99,6 +99,11 @@ namespace SlideJam.Game
             if (index >= 0 && index < _items.Count) _items[index].gameObject.SetActive(false);
         }
 
+        public SpriteRenderer Peek(int index)
+        {
+            return index >= 0 && index < _items.Count ? _items[index] : null;
+        }
+
         public void HideFrom(int first)
         {
             for (int i = Mathf.Max(0, first); i < _items.Count; i++) _items[i].gameObject.SetActive(false);

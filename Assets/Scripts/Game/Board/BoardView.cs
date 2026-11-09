@@ -64,9 +64,14 @@ namespace SlideJam.Game
             return new Vector3(col - (_cols - 1) / 2f, (_rows - 1) / 2f - row, 0f);
         }
 
+        public Vector3 CellToWorld(int row, int col)
+        {
+            return transform.TransformPoint(CellToLocal(row, col));
+        }
+
         public Color ColorOf(int color)
         {
-            return _skin.ColorOf(color); // changed
+            return _skin.ColorOf(color);
         }
 
         public void ShowState(BoardState state)
@@ -87,7 +92,7 @@ namespace SlideJam.Game
                     if (block.IsEmpty) continue;
 
                     BlockView view = GetOrCreate(block.Id);
-                    view.Bind(block.Id, ColorOf(block.Color), IconOf(block.Color)); // changed
+                    view.Bind(block.Id, ColorOf(block.Color), IconOf(block.Color));
                     view.transform.localPosition = CellToLocal(r, c);
                 }
             }
@@ -114,7 +119,7 @@ namespace SlideJam.Game
         public BlockView ShowBlock(int id, int color, Vector3 localPosition)
         {
             BlockView view = GetOrCreate(id);
-            view.Bind(id, ColorOf(color), IconOf(color)); // changed
+            view.Bind(id, ColorOf(color), IconOf(color));
             view.transform.localPosition = localPosition;
             return view;
         }

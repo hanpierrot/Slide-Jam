@@ -1,7 +1,5 @@
-using System.Reflection;
 using SlideJam.Game;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace SlideJam.EditorTools
@@ -20,16 +18,9 @@ namespace SlideJam.EditorTools
 
         private static readonly Color PageColor = new Color32(234, 248, 230, 255);
 
-        [MenuItem("Slide Jam/Build Scene Art")]
-        public static void Build()
+        // Skin, block prefab, view references, backdrop and camera colour. Run by the Setup Scene menu (SlideJamMenu).
+        internal static bool BuildArt(GameController controller)
         {
-            GameController controller = Object.FindObjectOfType<GameController>();
-            if (controller == null)
-            {
-                Debug.LogError("Build Scene Art: no GameController in the open scene.");
-                return;
-            }
-
             var boardView = Ref<BoardView>(controller, "_boardView");
             var cameraFit = Ref<CameraFit>(controller, "_cameraFit");
             var stage = Ref<StageLayout>(controller, "_stageLayout");
@@ -40,8 +31,8 @@ namespace SlideJam.EditorTools
             if (boardView == null || cameraFit == null || stage == null || slotsView == null || queueView == null
                 || stripView == null || levelConfig == null)
             {
-                Debug.LogError("Build Scene Art: GameController has an empty view reference. Assign them first.");
-                return;
+                Debug.LogError("Setup Scene: GameController has an empty view reference. Assign them first.");
+                return false;
             }
 
             ThemeSkin skin = EnsureSkin();
@@ -60,18 +51,28 @@ namespace SlideJam.EditorTools
             cameraFit.Cam.clearFlags = CameraClearFlags.SolidColor;
             cameraFit.Cam.backgroundColor = PageColor;
             EditorUtility.SetDirty(cameraFit.Cam);
-
-            MethodInfo preview = typeof(GameController).GetMethod("PreviewLayout", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (preview != null) preview.Invoke(controller, null);
-
-            EditorSceneManager.MarkSceneDirty(controller.gameObject.scene);
             AssetDatabase.SaveAssets();
-            Debug.Log("Build Scene Art: done. Check the Game view, then save the scene (Ctrl+S).");
+            return true;
+        }
+
+        // Only the part that depends on the layout numbers: the static backdrop follows the Stage anchors (Q18). Run by the Refresh Layout menu.
+        internal static bool RefreshBackdrop(GameController controller)
+        {
+            var boardView = Ref<BoardView>(controller, "_boardView");
+            var stage = Ref<StageLayout>(controller, "_stageLayout");
+            var levelConfig = Ref<LevelConfig>(controller, "_levelConfig");
+            if (boardView == null || stage == null || levelConfig == null)
+            {
+                Debug.LogError("Refresh Layout: GameController has an empty BoardView, StageLayout or LevelConfig reference.");
+                return false;
+            }
+
+            BuildBackdrop(stage, boardView, levelConfig.Rows, levelConfig.Cols);
+            return true;
         }
 
         // Mip maps stop the shimmering and broken edges when a big sprite is drawn much smaller than its pixels. PPU, borders and pivots are left alone.
-        [MenuItem("Slide Jam/Apply Sprite Quality")]
-        public static void ApplySpriteQuality()
+        internal static void ApplySpriteQuality()
         {
             int changed = 0;
             foreach (string guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Art/Sprites" }))

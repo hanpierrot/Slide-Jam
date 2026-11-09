@@ -12,6 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a1da8d2b69f0a5543bd20b5033720a9f, type: 3}
   m_Name: ThemeSkin
   m_EditorClassIdentifier: 
+  _palette:
+  - {r: 0.9, g: 0.25, b: 0.3, a: 1}
+  - {r: 0.25, g: 0.45, b: 0.9, a: 1}
+  - {r: 0.45, g: 0.75, b: 0.3, a: 1}
+  - {r: 0.98, g: 0.6, b: 0.15, a: 1}
+  - {r: 0.6, g: 0.35, b: 0.75, a: 1}
+  _basketLayout:
+    InteriorWidth: 0.6
+    PipY: 0.053
+    PipWidth: 0.213
+    PipFill: 0.95
+    FruitInPip: 0.9
   _queueOpen: {fileID: 21300000, guid: 123fd152a6a822f48bdf55e9ece95e8c, type: 3}
   _queueLocked: {fileID: 21300000, guid: 7d293cdea5c8625448201bdd146deab1, type: 3}
   _fruits:

@@ -17,6 +17,14 @@ namespace SlideJam.Game
         [SerializeField, Min(0f)] private float _fallBaseSeconds = 0.16f;
         [SerializeField, Min(0f)] private float _fallPerCellSeconds = 0.09f;
         [SerializeField, Min(0f)] private float _reviveSeconds = 0.35f;
+        [SerializeField, Min(0f)] private float _flightSeconds = 0.36f;
+        [SerializeField, Min(0f)] private float _flightStaggerSeconds = 0.04f;
+        [SerializeField, Range(0f, 1f)] private float _flightEndScale = 0.45f;
+        [SerializeField, Min(0f)] private float _slotPopSeconds = 0.26f;
+        [SerializeField, Min(1f)] private float _slotPopScale = 1.12f;
+        [SerializeField, Min(0f)] private float _slotEnterSeconds = 0.26f;
+        [SerializeField, Range(0.3f, 1f)] private float _overflowUnitScale = 0.8f;
+        [SerializeField, Min(0f)] private float _overflowFadeSeconds = 0.15f;
 
         [Header("Input")]
         [SerializeField, Min(0f)] private float _lockDistance = 8f;
@@ -25,6 +33,7 @@ namespace SlideJam.Game
         [Header("Capacity")]
         [SerializeField, Min(0)] private int _queueUnitBuffer = 6;
         [SerializeField, Min(1)] private int _stripVisible = 5;
+        [SerializeField, Min(1)] private int _flightPoolSize = 16;
 
         public int CapMin => _capMin;
         public int CapMax => _capMax;
@@ -36,7 +45,16 @@ namespace SlideJam.Game
         public float FallBaseSeconds => _fallBaseSeconds;
         public float FallPerCellSeconds => _fallPerCellSeconds;
         public float ReviveSeconds => _reviveSeconds;
-
+        public float FlightSeconds => _flightSeconds;
+        public float FlightStaggerSeconds => _flightStaggerSeconds;
+        public float FlightEndScale => _flightEndScale;
+        public float SlotPopSeconds => _slotPopSeconds;
+        public float SlotPopScale => _slotPopScale;
+        public float SlotEnterSeconds => _slotEnterSeconds;
+        public int FlightPoolSize => _flightPoolSize;
+        public float OverflowUnitScale => _overflowUnitScale;
+        public float OverflowFadeSeconds => _overflowFadeSeconds;
+        
         public float LockDistance => _lockDistance;
         public float ReferenceWidth => _referenceWidth;
 

@@ -40,7 +40,7 @@ namespace SlideJam.Game
                 return;
             }
             
-            _phasePlayer.Init(_boardView, Config);
+            _phasePlayer.Init(_boardView, _slotsView, _queueView, _stripView, Config, ShowProgress);
             _dragInput.Init(_boardView, _cameraFit.Cam, Config);
             _slotsView.Init(_boardView.ColorOf);
             _queueView.Init(_boardView.ColorOf);
@@ -82,8 +82,7 @@ namespace SlideJam.Game
             }
         }
         
-        [ContextMenu("Preview Layout")]
-        private void PreviewLayout()
+        public void PreviewLayout() // changed: no context menu any more; the Slide Jam > Setup Scene and Refresh Layout menus call it (Edit Mode only)
         {
             if (Application.isPlaying) return;
 
@@ -105,7 +104,7 @@ namespace SlideJam.Game
             _queueView.Init(_boardView.ColorOf);
             _stripView.Init(_boardView.ColorOf);
             _slotsView.Build(level.ActiveSlots, Config.CapMax, new Vector2(level.Cols + SlotsExtraWidth, _stageLayout.SlotsHeight));
-            _queueView.Build(level.QueueMax, new Vector2(level.Cols, _stageLayout.QueueHeight), Config.QueueUnitBuffer);
+            _queueView.Build(level.QueueMax, new Vector2(level.Cols, _stageLayout.QueueHeight), Config);
             _stripView.Build(new Vector2(level.Cols, _stageLayout.StripHeight), Config.StripVisible);
             _slotsView.Show(state);
             _queueView.Show(state);
@@ -120,6 +119,7 @@ namespace SlideJam.Game
         {
             if (_run != null) StopCoroutine(_run);
             _run = null;
+            _phasePlayer.CancelFlights();
             _endOverlay.Hide();
 
             if (Config == null || _levelConfig == null)
@@ -134,7 +134,7 @@ namespace SlideJam.Game
             Rect bounds = _stageLayout.Apply(level.Rows, level.Cols);
             _boardView.Build(level);
             _slotsView.Build(level.ActiveSlots, Config.CapMax, new Vector2(level.Cols + SlotsExtraWidth, _stageLayout.SlotsHeight));
-            _queueView.Build(level.QueueMax, new Vector2(level.Cols, _stageLayout.QueueHeight), Config.QueueUnitBuffer);
+            _queueView.Build(level.QueueMax, new Vector2(level.Cols, _stageLayout.QueueHeight), Config);
             _stripView.Build(new Vector2(level.Cols, _stageLayout.StripHeight), Config.StripVisible);
             _cameraFit.Fit(bounds);
             _hudView.ShowLevel(_levelConfig.Number);
@@ -200,7 +200,12 @@ namespace SlideJam.Game
             _slotsView.Show(State);
             _queueView.Show(State);
             _stripView.Show(State);
-            _hudView.ShowTargetsLeft(State.Seq.Length - State.Done);
+            ShowProgress(State);
+        }
+        
+        private void ShowProgress(BoardState state) 
+        {
+            _hudView.ShowTargetsLeft(state.Seq.Length - state.Done);
         }
         
         private IEnumerator Run(IEnumerator routine)
@@ -209,6 +214,7 @@ namespace SlideJam.Game
             yield return routine;
 
             if (!State.Ended.HasValue && !_boardView.Matches(State)) Debug.LogError("The board on screen differs from the state after the move.");
+            if (!_slotsView.Matches(State) || !_queueView.Matches(State)) Debug.LogError("The slots or the queue on screen differ from the state after the move.");
 
             ShowAll();
             SetBusy(false);
