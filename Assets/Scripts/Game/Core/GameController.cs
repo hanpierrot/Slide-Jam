@@ -19,11 +19,13 @@ namespace SlideJam.Game
         [SerializeField] private EndOverlayView _endOverlay;
         
         [Header("Configs")]
-        [SerializeField] private GameConfig _gameConfig;
+        [SerializeField] private GameManager _gameManager;
         [SerializeField] private LevelConfig _levelConfig;
         [SerializeField] private bool _logMoves = true;
         
-        private const float SlotsExtraWidth = 0.4f; // added
+        private const float SlotsExtraWidth = 0.4f;
+        
+        private GameConfig Config => _gameManager != null ? _gameManager.Config : null;
 
         private Coroutine _run;
         
@@ -32,8 +34,14 @@ namespace SlideJam.Game
 
         private void Awake()
         {
-            _phasePlayer.Init(_boardView);
-            _dragInput.Init(_boardView, _cameraFit.Cam);
+            if (Config == null)
+            {
+                Debug.LogError("GameController needs a GameManager that holds a GameConfig.", this);
+                return;
+            }
+            
+            _phasePlayer.Init(_boardView, Config);
+            _dragInput.Init(_boardView, _cameraFit.Cam, Config);
             _slotsView.Init(_boardView.ColorOf);
             _queueView.Init(_boardView.ColorOf);
             _stripView.Init(_boardView.ColorOf);
@@ -79,14 +87,14 @@ namespace SlideJam.Game
         {
             if (Application.isPlaying) return;
 
-            if (_gameConfig == null || _levelConfig == null || _stageLayout == null || _cameraFit == null
+            if (Config == null || _levelConfig == null || _stageLayout == null || _cameraFit == null
                 || _boardView == null || _slotsView == null || _queueView == null || _stripView == null)
             {
                 Debug.LogWarning("Preview Layout needs every reference on GameController to be assigned.");
                 return;
             }
 
-            LevelData level = _levelConfig.ToLevelData(_gameConfig);
+            LevelData level = _levelConfig.ToLevelData(Config);
             BoardState state = BoardState.New(level);
 
             _boardView.SetPreviewSize(level.Rows, level.Cols);
@@ -96,13 +104,14 @@ namespace SlideJam.Game
             _slotsView.Init(_boardView.ColorOf);
             _queueView.Init(_boardView.ColorOf);
             _stripView.Init(_boardView.ColorOf);
-            _slotsView.Build(level.ActiveSlots, _gameConfig.CapMax, new Vector2(level.Cols + SlotsExtraWidth, _stageLayout.SlotsHeight)); // changed: baskets may be a little wider than the grid
-            _queueView.Build(level.QueueMax, new Vector2(level.Cols, _stageLayout.QueueHeight));
-            _stripView.Build(new Vector2(level.Cols, _stageLayout.StripHeight));
+            _slotsView.Build(level.ActiveSlots, Config.CapMax, new Vector2(level.Cols + SlotsExtraWidth, _stageLayout.SlotsHeight));
+            _queueView.Build(level.QueueMax, new Vector2(level.Cols, _stageLayout.QueueHeight), Config.QueueUnitBuffer);
+            _stripView.Build(new Vector2(level.Cols, _stageLayout.StripHeight), Config.StripVisible);
             _slotsView.Show(state);
             _queueView.Show(state);
             _stripView.Show(state);
 
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
             UnityEditor.SceneView.RepaintAll();
         }
 #endif
@@ -113,20 +122,20 @@ namespace SlideJam.Game
             _run = null;
             _endOverlay.Hide();
 
-            if (_gameConfig == null || _levelConfig == null)
+            if (Config == null || _levelConfig == null)
             {
-                Debug.LogError("GameController needs a GameConfig and a LevelConfig.");
+                Debug.LogError("GameController needs a GameManager with a GameConfig, and a LevelConfig."); 
                 return;
             }
 
-            LevelData level = _levelConfig.ToLevelData(_gameConfig);
+            LevelData level = _levelConfig.ToLevelData(Config);
             State = BoardState.New(level);
             SetBusy(false);
             Rect bounds = _stageLayout.Apply(level.Rows, level.Cols);
             _boardView.Build(level);
-            _slotsView.Build(level.ActiveSlots, _gameConfig.CapMax, new Vector2(level.Cols + SlotsExtraWidth, _stageLayout.SlotsHeight)); // changed: baskets may be a little wider than the grid
-            _queueView.Build(level.QueueMax, new Vector2(level.Cols, _stageLayout.QueueHeight));
-            _stripView.Build(new Vector2(level.Cols, _stageLayout.StripHeight));
+            _slotsView.Build(level.ActiveSlots, Config.CapMax, new Vector2(level.Cols + SlotsExtraWidth, _stageLayout.SlotsHeight));
+            _queueView.Build(level.QueueMax, new Vector2(level.Cols, _stageLayout.QueueHeight), Config.QueueUnitBuffer);
+            _stripView.Build(new Vector2(level.Cols, _stageLayout.StripHeight), Config.StripVisible);
             _cameraFit.Fit(bounds);
             _hudView.ShowLevel(_levelConfig.Number);
             ShowAll();

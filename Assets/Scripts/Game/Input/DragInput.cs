@@ -7,10 +7,6 @@ namespace SlideJam.Game
 {
     public class DragInput : MonoBehaviour
     {
-        private const float ReferenceWidth = 360f;
-        
-        [SerializeField] private float _lockDistance = 8f;
-        
         private enum DragState
         {
             Idle,
@@ -20,6 +16,7 @@ namespace SlideJam.Game
         
         private BoardView _boardView;
         private Camera _camera;
+        private GameConfig _config; // added
         private DragState _state;
         private Vector2 _pressLocal;
         private int _row;
@@ -31,10 +28,11 @@ namespace SlideJam.Game
         public event Action<LineDrag> Dragging;
         public event Action<LineDrag> Released; 
 
-        public void Init(BoardView boardView, Camera camera)
+        public void Init(BoardView boardView, Camera camera, GameConfig config) // changed
         {
             _boardView = boardView;
             _camera = camera;
+            _config = config; // added
         }
         
         private void OnDisable()
@@ -109,7 +107,7 @@ namespace SlideJam.Game
         private float LockDistanceLocal()
         {
             float worldWidth = 2f * _camera.orthographicSize * _camera.aspect;
-            float world = _lockDistance / ReferenceWidth * worldWidth;
+            float world = _config.LockDistance / _config.ReferenceWidth * worldWidth; // changed
             return world / _boardView.transform.lossyScale.x;
         }
     }

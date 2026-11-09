@@ -54,7 +54,6 @@ namespace SlideJam.EditorTools
             SetFloat(slotsView, "_slotGap", 0.05f);
             SetRef(queueView, "_openSprite", skin.QueueOpen);
             SetRef(queueView, "_lockedSprite", skin.QueueLocked);
-            SetInt(stripView, "_visible", 5);
 
             BuildBackdrop(stage, boardView, levelConfig.Rows, levelConfig.Cols);
 

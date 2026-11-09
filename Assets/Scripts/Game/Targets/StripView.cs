@@ -9,76 +9,72 @@ namespace SlideJam.Game
     public class StripView : MonoBehaviour
     {
         [SerializeField] private Sprite _sprite;
-        [SerializeField] private ThemeSkin _skin; // added: optional, null keeps the flat coloured squares
-        [SerializeField, Min(1)] private int _visible = 6;
+        [SerializeField] private ThemeSkin _skin;
+        private int _visible; // changed: set by Build from GameConfig
 
-        private readonly List<SpriteRenderer> _items = new List<SpriteRenderer>();
-        private readonly List<SpriteRenderer> _chips = new List<SpriteRenderer>(); // added
-        private readonly List<SpriteRenderer> _icons = new List<SpriteRenderer>(); // added
+        private SquarePool _chips;
+        private SquarePool _icons;
         private Func<int, Color> _colorOf;
         private float _spacing;
         private float _itemSize;
+
+        private bool Skinned => _skin != null;
 
         public void Init(Func<int, Color> colorOf)
         {
             _colorOf = colorOf;
         }
 
-        public void Build(Vector2 size)
+        public void Build(Vector2 size, int visible) // changed
         {
-            if (_skin != null) Squares.Prepare(transform, _chips, _icons); // changed
-            else Squares.Prepare(transform, _items);
+            _visible = Mathf.Max(1, visible); // added
             _spacing = Mathf.Min(0.7f, size.x / _visible);
             _itemSize = Mathf.Min(_spacing * 0.8f, size.y);
-            Squares.HideFrom(_items, _visible);
-            Squares.HideFrom(_chips, _visible); // added
-            Squares.HideFrom(_icons, _visible); // added
+
+            _chips = SquarePool.Obtain(_chips, transform, "Chips", 0);
+            _chips.Warm(_visible);
+            _chips.HideFrom(0);
+            if (Skinned)
+            {
+                _icons = SquarePool.Obtain(_icons, transform, "Icons", 1);
+                _icons.Warm(_visible);
+            }
+
+            _icons?.HideFrom(0);
         }
 
         public void Show(BoardState state)
         {
             int shown = Mathf.Clamp(state.Seq.Length - state.SeqI, 0, _visible);
-            if (_skin != null)
-            {
-                ShowChips(state, shown); // added
-                return;
-            }
-
             for (int k = 0; k < shown; k++)
             {
                 Target target = state.Seq[state.SeqI + k];
-                float x = (k - (_visible - 1) / 2f) * _spacing;
-                Squares.Set(Squares.At(_items, k, transform, _sprite, 0), new Vector3(x, 0f, 0f), _itemSize, _itemSize,
-                    _colorOf(target.Color));
+                Vector3 position = ChipLocal(k);
+                if (Skinned)
+                {
+                    ThemeSkin.FruitArt art = _skin.Fruit(target.Color);
+                    float chipWidth = _spacing * 0.92f;
+                    _chips.Fit(k, art.Chip, position, chipWidth, Color.white);
+                    _icons.Fit(k, art.Icon, position, chipWidth * 0.5f, Color.white);
+                }
+                else
+                {
+                    _chips.Stretch(k, _sprite, position, _itemSize, _itemSize, _colorOf(target.Color));
+                }
             }
 
-            Squares.HideFrom(_items, shown);
+            _chips.HideFrom(shown);
+            _icons?.HideFrom(shown);
         }
 
-        // added: a shelf chip per upcoming target with the fruit on top of it
-        private void ShowChips(BoardState state, int shown)
+        public Vector3 ChipLocal(int index)
         {
-            float chipWidth = _spacing * 0.92f;
-            for (int k = 0; k < shown; k++)
-            {
-                Target target = state.Seq[state.SeqI + k];
-                ThemeSkin.FruitArt art = _skin.Fruit(target.Color);
-                float x = (k - (_visible - 1) / 2f) * _spacing;
-                var position = new Vector3(x, 0f, 0f);
+            return new Vector3((index - (_visible - 1) / 2f) * _spacing, 0f, 0f);
+        }
 
-                SpriteRenderer chip = Squares.At(_chips, k, transform, art.Chip, 0);
-                chip.sprite = art.Chip;
-                if (art.Chip != null) Squares.SetFit(chip, position, chipWidth, Color.white);
-                chip.gameObject.SetActive(art.Chip != null);
-
-                SpriteRenderer icon = Squares.At(_icons, k, transform, art.Icon, 1);
-                icon.sprite = art.Icon;
-                if (art.Icon != null) Squares.SetFit(icon, position, chipWidth * 0.5f, Color.white);
-                icon.gameObject.SetActive(art.Icon != null);
-            }
-
-            Squares.HideFrom(_chips, shown);
-            Squares.HideFrom(_icons, shown);
+        public Vector3 ChipWorld(int index)
+        {
+            return transform.TransformPoint(ChipLocal(index));
         }
     }
 }

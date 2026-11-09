@@ -18,14 +18,6 @@ namespace SlideJam.Game
         [SerializeField, HideInInspector] private int _previewCols;
         
         [SerializeField] private ThemeSkin _skin;
-        [SerializeField] private Color[] _palette =
-        {
-            new Color(0.90f, 0.25f, 0.30f),
-            new Color(0.25f, 0.45f, 0.90f),
-            new Color(0.45f, 0.75f, 0.30f),
-            new Color(0.98f, 0.60f, 0.15f),
-            new Color(0.60f, 0.35f, 0.75f),
-        };
 
         private readonly Dictionary<int, BlockView> _views = new Dictionary<int, BlockView>();
 
@@ -46,7 +38,8 @@ namespace SlideJam.Game
 
         public void Build(LevelData level)
         {
-            if (_palette.Length < level.Colors)
+            if (_skin == null) throw new InvalidOperationException("BoardView needs a ThemeSkin (it holds the colour palette)."); // changed
+            if (_skin.PaletteLength < level.Colors)
             {
                 throw new InvalidOperationException("The palette has fewer colours than the level.");
             }
@@ -73,7 +66,7 @@ namespace SlideJam.Game
 
         public Color ColorOf(int color)
         {
-            return _palette[color];
+            return _skin.ColorOf(color); // changed
         }
 
         public void ShowState(BoardState state)
@@ -94,7 +87,7 @@ namespace SlideJam.Game
                     if (block.IsEmpty) continue;
 
                     BlockView view = GetOrCreate(block.Id);
-                    view.Bind(block.Id, _palette[block.Color], IconOf(block.Color));
+                    view.Bind(block.Id, ColorOf(block.Color), IconOf(block.Color)); // changed
                     view.transform.localPosition = CellToLocal(r, c);
                 }
             }
@@ -121,7 +114,7 @@ namespace SlideJam.Game
         public BlockView ShowBlock(int id, int color, Vector3 localPosition)
         {
             BlockView view = GetOrCreate(id);
-            view.Bind(id, _palette[color], IconOf(color));
+            view.Bind(id, ColorOf(color), IconOf(color)); // changed
             view.transform.localPosition = localPosition;
             return view;
         }

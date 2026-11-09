@@ -9,24 +9,18 @@ namespace SlideJam.Game
     {
         private BoardView _boardView;
         
-        // Starting timings from DESIGN 7; they move into GameConfig (I10)
-        [SerializeField] private float _snapSeconds = 0.13f;
-        [SerializeField] private float _snapBackSeconds = 0.14f;
-        [SerializeField] private float _clearSeconds = 0.17f;
-        [SerializeField] private float _pulseScale = 1.15f;
-        [SerializeField] private float _fallBaseSeconds = 0.16f;
-        [SerializeField] private float _fallPerCellSeconds = 0.09f;
-        [SerializeField] private float _reviveSeconds = 0.35f;
+        private GameConfig _config; // changed: the timings live in GameConfig (I10)
 
-        public void Init(BoardView boardView)
+        public void Init(BoardView boardView, GameConfig config) // changed: takes the config
         {
             _boardView = boardView;
+            _config = config;
         }
-        
+
         public IEnumerator PlayMove(BoardState before, MoveResult result, Axis axis, int index,
             float startOffset, int notches)
         {
-            yield return SlideLine(before, axis, index, startOffset, notches, _snapSeconds);
+            yield return SlideLine(before, axis, index, startOffset, notches, _config.SnapSeconds);
             
             BoardState previous = before;
             foreach (Phase phase in result.Phases)
@@ -50,7 +44,7 @@ namespace SlideJam.Game
         
         public IEnumerator SnapBack(BoardState state, Axis axis, int index, float startOffset)
         {
-            return SlideLine(state, axis, index, startOffset, 0f, _snapBackSeconds);
+            return SlideLine(state, axis, index, startOffset, 0f, _config.SnapBackSeconds);
         }
 
         private IEnumerator SlideLine(BoardState state, Axis axis, int index, float from, float to, float seconds)
@@ -75,12 +69,12 @@ namespace SlideJam.Game
                 }
             }
 
-            for (float t = 0f; t < _clearSeconds; t += Time.deltaTime)
+            for (float t = 0f; t < _config.ClearSeconds; t += Time.deltaTime)
             {
-                float k = t / _clearSeconds;
+                float k = t / _config.ClearSeconds;
                 float factor = k < 0.5f
-                    ? Mathf.Lerp(1f, _pulseScale, k * 2f)
-                    : Mathf.Lerp(_pulseScale, 0f, (k - 0.5f) * 2f);
+                    ? Mathf.Lerp(1f, _config.PulseScale, k * 2f)
+                    : Mathf.Lerp(_config.PulseScale, 0f, (k - 0.5f) * 2f);
                 foreach (BlockView view in matched) view.SetScaleFactor(factor);
                 yield return null;
             }
@@ -104,9 +98,9 @@ namespace SlideJam.Game
                 toPos.Add(_boardView.CellToLocal(flight.To.A, flight.To.B));
             }
 
-            for (float t = 0f; t < _reviveSeconds; t += Time.deltaTime)
+            for (float t = 0f; t < _config.ReviveSeconds; t += Time.deltaTime)
             {
-                float k = Mathf.SmoothStep(0f, 1f, t / _reviveSeconds);
+                float k = Mathf.SmoothStep(0f, 1f, t / _config.ReviveSeconds);
                 for (int i = 0; i < movers.Count; i++) movers[i].transform.localPosition = Vector3.Lerp(fromPos[i], toPos[i], k);
                 yield return null;
             }
@@ -139,7 +133,7 @@ namespace SlideJam.Game
                 }
             }
 
-            float seconds = _fallBaseSeconds + _fallPerCellSeconds * longest;
+            float seconds = _config.FallBaseSeconds + _config.FallPerCellSeconds * longest;
             for (float t = 0f; t < seconds; t += Time.deltaTime)
             {
                 float k = Mathf.SmoothStep(0f, 1f, t / seconds);
