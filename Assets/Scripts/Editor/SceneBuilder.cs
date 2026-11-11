@@ -12,13 +12,11 @@ namespace SlideJam.EditorTools
         private const string BackdropName = "Backdrop";
         private const string BranchName = "Branch";
 
-        // Colour index = position in these arrays (DESIGN 9): 0 cherry, 1 blueberry, 2 pear, 3 orange, 4 plum
         private static readonly string[] BasketNames = { "cherry", "blueberry", "pear", "orange", "plum" };
         private static readonly string[] FruitFiles = { "cherries", "blueberries", "pear", "orange", "plum" };
 
         private static readonly Color PageColor = new Color32(234, 248, 230, 255);
 
-        // Skin, block prefab, view references, backdrop and camera colour. Run by the Setup Scene menu (SlideJamMenu).
         internal static bool BuildArt(GameController controller)
         {
             var boardView = Ref<BoardView>(controller, "_boardView");
@@ -42,10 +40,11 @@ namespace SlideJam.EditorTools
             SetRef(slotsView, "_skin", skin);
             SetRef(stripView, "_skin", skin);
             SetRef(queueView, "_skin", skin);
-            SetFloat(slotsView, "_slotGap", 0.05f);
             SetRef(queueView, "_openSprite", skin.QueueOpen);
             SetRef(queueView, "_lockedSprite", skin.QueueLocked);
-
+            var nextSpawn = Ref<NextSpawnView>(controller, "_nextSpawnView");
+            if (nextSpawn != null) SetRef(nextSpawn, "_skin", skin);
+            
             BuildBackdrop(stage, boardView, levelConfig.Rows, levelConfig.Cols);
 
             cameraFit.Cam.clearFlags = CameraClearFlags.SolidColor;
@@ -55,7 +54,6 @@ namespace SlideJam.EditorTools
             return true;
         }
 
-        // Only the part that depends on the layout numbers: the static backdrop follows the Stage anchors (Q18). Run by the Refresh Layout menu.
         internal static bool RefreshBackdrop(GameController controller)
         {
             var boardView = Ref<BoardView>(controller, "_boardView");
@@ -71,7 +69,6 @@ namespace SlideJam.EditorTools
             return true;
         }
 
-        // Mip maps stop the shimmering and broken edges when a big sprite is drawn much smaller than its pixels. PPU, borders and pivots are left alone.
         internal static void ApplySpriteQuality()
         {
             int changed = 0;
@@ -179,12 +176,11 @@ namespace SlideJam.EditorTools
                 SetRef(stage, "_branch", branch);
             }
 
-            stage.Apply(rows, cols); // the branch band changes every anchor position, so lay out before reading them
+            stage.Apply(rows, cols);
 
             Transform backdrop = Child(stage.transform, BackdropName);
             backdrop.localPosition = Vector3.zero;
 
-            // Sky behind the baskets and the strip, plank under the strip chips. Static: run this menu again if the layout numbers change.
             Put(backdrop, "Sky", "scene/sky_panel", new Vector3(0f, slots.localPosition.y - 0.55f, 0f), -20);
             Put(backdrop, "Plank", "shelf/shelf_plank", new Vector3(0f, strip.localPosition.y - 0.3f, 0f), -10);
             Put(branch, "BranchArt", "scene/branch", Vector3.zero, -5);
@@ -218,6 +214,19 @@ namespace SlideJam.EditorTools
             renderer.sortingOrder = order;
             t.localPosition = localPosition;
             t.localScale = Vector3.one;
+        }
+        
+        private static void PutLeaves(Transform branch, Sprite art)
+        {
+            float half = art != null ? art.bounds.size.x / 2f : 3f;
+            PutLeaf(branch, "LeafLeft", new Vector3(-half + 0.15f, 0.08f, 0f), 1f);
+            PutLeaf(branch, "LeafRight", new Vector3(half - 0.15f, 0.08f, 0f), -1f);
+        }
+
+        private static void PutLeaf(Transform branch, string name, Vector3 position, float side)
+        {
+            Put(branch, name, "scene/branch_leaf", position, -4);
+            branch.Find(name).localScale = new Vector3(side, 1f, 1f);
         }
 
         private static Sprite Load(string path)

@@ -23,7 +23,6 @@ namespace SlideJam.Game
         [SerializeField, Min(0f)] private float _slotPopSeconds = 0.26f;
         [SerializeField, Min(1f)] private float _slotPopScale = 1.12f;
         [SerializeField, Min(0f)] private float _slotEnterSeconds = 0.26f;
-        [SerializeField, Range(0.3f, 1f)] private float _overflowUnitScale = 0.8f;
         [SerializeField, Min(0f)] private float _overflowFadeSeconds = 0.15f;
         [SerializeField, Min(0.1f)] private float _previewPulseSeconds = 0.8f;
         [SerializeField, Min(1f)] private float _previewPulseScale = 1.1f;
@@ -55,7 +54,6 @@ namespace SlideJam.Game
         public float SlotPopScale => _slotPopScale;
         public float SlotEnterSeconds => _slotEnterSeconds;
         public int FlightPoolSize => _flightPoolSize;
-        public float OverflowUnitScale => _overflowUnitScale;
         public float OverflowFadeSeconds => _overflowFadeSeconds;
         
         public float LockDistance => _lockDistance;

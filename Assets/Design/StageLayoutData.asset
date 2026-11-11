@@ -1,0 +1,680 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2296cfb7eea09ca40bb956fe238732e0, type: 3}
+  m_Name: StageLayoutData
+  m_EditorClassIdentifier: 
+  _hasPositions: 1
+  _slotsPosition: {x: 0, y: 5.25, z: 0}
+  _stripPosition: {x: 0, y: 3.8000002, z: 0}
+  _queuePosition: {x: 0, y: 3, z: 0}
+  _branchPosition: {x: 0, y: 2.3, z: 0}
+  _dotsPosition: {x: 0, y: -0.95000017, z: 0}
+  _gridPosition: {x: 0, y: -1.8, z: 0}
+  _hasScales: 1
+  _slotsScale: {x: 1, y: 1, z: 1}
+  _stripScale: {x: 1, y: 1, z: 1}
+  _queueScale: {x: 1, y: 1, z: 1}
+  _branchScale: {x: 1, y: 1, z: 1}
+  _dotsScale: {x: 1, y: 1, z: 1}
+  _gridScale: {x: 1, y: 1, z: 1}
+  _items:
+  - Path: Slots/Pool_Backs
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Backs/Square 0
+    Position: {x: -2.15, y: -0.2, z: 0}
+    Scale: {x: 1.2049181, y: 1.2049181, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Backs/Square 1
+    Position: {x: 0, y: -0.2, z: 0}
+    Scale: {x: 1.2049181, y: 1.2049181, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Backs/Square 2
+    Position: {x: 2.15, y: -0.2, z: 0}
+    Scale: {x: 1.2049181, y: 1.2049181, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 0
+    Position: {x: -2.5700002, y: -0.0887, z: 0}
+    Scale: {x: 1.0742309, y: 1.0742309, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 1
+    Position: {x: -2.15, y: -0.0887, z: 0}
+    Scale: {x: 1.0742309, y: 1.0742309, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 2
+    Position: {x: -1.73, y: -0.0887, z: 0}
+    Scale: {x: 1.0742309, y: 1.0742309, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 3
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 4
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 5
+    Position: {x: -0.42000005, y: -0.0887, z: 0}
+    Scale: {x: 1.0742309, y: 1.0742309, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 6
+    Position: {x: 0, y: -0.0887, z: 0}
+    Scale: {x: 1.0742309, y: 1.0742309, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 7
+    Position: {x: 0.42000005, y: -0.0887, z: 0}
+    Scale: {x: 1.0742309, y: 1.0742309, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 8
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 9
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 10
+    Position: {x: 1.73, y: -0.0887, z: 0}
+    Scale: {x: 1.0742309, y: 1.0742309, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 11
+    Position: {x: 2.15, y: -0.0887, z: 0}
+    Scale: {x: 1.0742309, y: 1.0742309, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 12
+    Position: {x: 2.5700002, y: -0.0887, z: 0}
+    Scale: {x: 1.0742309, y: 1.0742309, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 13
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_PipSlots/Square 14
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Shadows
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Shadows/Square 0
+    Position: {x: -2.15, y: -0.2, z: 0}
+    Scale: {x: 1.2049181, y: 1.2049181, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Shadows/Square 1
+    Position: {x: 0, y: -0.2, z: 0}
+    Scale: {x: 1.2049181, y: 1.2049181, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Shadows/Square 2
+    Position: {x: 2.15, y: -0.2, z: 0}
+    Scale: {x: 1.2049181, y: 1.2049181, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 0
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 1
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 2
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 3
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 4
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 5
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 6
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 7
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 8
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 9
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 10
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 11
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 12
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 13
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fruits/Square 14
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fronts
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fronts/Square 0
+    Position: {x: -2.15, y: -0.2, z: 0}
+    Scale: {x: 1.2049181, y: 1.2049181, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fronts/Square 1
+    Position: {x: 0, y: -0.2, z: 0}
+    Scale: {x: 1.2049181, y: 1.2049181, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Fronts/Square 2
+    Position: {x: 2.15, y: -0.2, z: 0}
+    Scale: {x: 1.2049181, y: 1.2049181, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Locks
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Locks/Square 0
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Locks/Square 1
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Slots/Pool_Locks/Square 2
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Strip/Pool_Chips
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Strip/Pool_Chips/Square 0
+    Position: {x: -1.4, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Strip/Pool_Chips/Square 1
+    Position: {x: -0.7, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Strip/Pool_Chips/Square 2
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Strip/Pool_Chips/Square 3
+    Position: {x: 0.7, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Strip/Pool_Chips/Square 4
+    Position: {x: 1.4, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Strip/Pool_Icons
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Strip/Pool_Icons/Square 0
+    Position: {x: -1.4, y: 0, z: 0}
+    Scale: {x: 0.4, y: 0.4, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Strip/Pool_Icons/Square 1
+    Position: {x: -0.7, y: 0, z: 0}
+    Scale: {x: 0.4, y: 0.4, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Strip/Pool_Icons/Square 2
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 0.4, y: 0.4, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Strip/Pool_Icons/Square 3
+    Position: {x: 0.7, y: 0, z: 0}
+    Scale: {x: 0.4, y: 0.4, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Strip/Pool_Icons/Square 4
+    Position: {x: 1.4, y: 0, z: 0}
+    Scale: {x: 0.4, y: 0.4, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Chairs
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Chairs/Square 0
+    Position: {x: -2.562, y: 0, z: 0}
+    Scale: {x: 0.7977857, y: 0.7977857, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Chairs/Square 1
+    Position: {x: -1.686, y: 0, z: 0}
+    Scale: {x: 0.7977857, y: 0.7977857, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Chairs/Square 2
+    Position: {x: -0.81000006, y: 0, z: 0}
+    Scale: {x: 0.7977857, y: 0.7977857, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Chairs/Square 3
+    Position: {x: 0.065999955, y: 0, z: 0}
+    Scale: {x: 0.7977857, y: 0.7977857, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Chairs/Square 4
+    Position: {x: 0.9419999, y: 0, z: 0}
+    Scale: {x: 0.7977857, y: 0.7977857, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Units
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Units/Square 0
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Units/Square 1
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Units/Square 2
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Units/Square 3
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Units/Square 4
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Units/Square 5
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Units/Square 6
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Units/Square 7
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Units/Square 8
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Units/Square 9
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/Pool_Units/Square 10
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/OverflowBox
+    Position: {x: 2.25, y: 0, z: 0}
+    Scale: {x: 0.84375, y: 0.84375, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Queue/PreviewLabel
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 1.5, y: 0.6}
+    FontSize: 3
+  - Path: Branch/BranchArt
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Hangers
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Hangers/Square 0
+    Position: {x: -2.5, y: 0.83666676, z: 0}
+    Scale: {x: 0.48, y: 0.48, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Hangers/Square 1
+    Position: {x: -1.5, y: 0.83666676, z: 0}
+    Scale: {x: 0.48, y: 0.48, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Hangers/Square 2
+    Position: {x: -0.5, y: 0.83666676, z: 0}
+    Scale: {x: 0.48, y: 0.48, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Hangers/Square 3
+    Position: {x: 0.5, y: 0.83666676, z: 0}
+    Scale: {x: 0.48, y: 0.48, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Hangers/Square 4
+    Position: {x: 1.5, y: 0.83666676, z: 0}
+    Scale: {x: 0.48, y: 0.48, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Hangers/Square 5
+    Position: {x: 2.5, y: 0.83666676, z: 0}
+    Scale: {x: 0.48, y: 0.48, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Icons
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Icons/Square 0
+    Position: {x: -2.5, y: 0.3, z: 0}
+    Scale: {x: 0.625, y: 0.625, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Icons/Square 1
+    Position: {x: -1.5, y: 0.3, z: 0}
+    Scale: {x: 0.625, y: 0.625, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Icons/Square 2
+    Position: {x: -0.5, y: 0.3, z: 0}
+    Scale: {x: 0.625, y: 0.625, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Icons/Square 3
+    Position: {x: 0.5, y: 0.3, z: 0}
+    Scale: {x: 0.625, y: 0.625, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Icons/Square 4
+    Position: {x: 1.5, y: 0.3, z: 0}
+    Scale: {x: 0.625, y: 0.625, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Icons/Square 5
+    Position: {x: 2.5, y: 0.3, z: 0}
+    Scale: {x: 0.625, y: 0.625, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Icons/Square 6
+    Position: {x: -2.5, y: 0.65000004, z: 0}
+    Scale: {x: 0.46875003, y: 0.46875003, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Icons/Square 7
+    Position: {x: -1.5, y: 0.65000004, z: 0}
+    Scale: {x: 0.46875003, y: 0.46875003, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Icons/Square 8
+    Position: {x: -0.5, y: 0.65000004, z: 0}
+    Scale: {x: 0.46875003, y: 0.46875003, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Icons/Square 9
+    Position: {x: 0.5, y: 0.65000004, z: 0}
+    Scale: {x: 0.46875003, y: 0.46875003, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Icons/Square 10
+    Position: {x: 1.5, y: 0.65000004, z: 0}
+    Scale: {x: 0.46875003, y: 0.46875003, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Branch/Dots/Pool_Icons/Square 11
+    Position: {x: 2.5, y: 0.65000004, z: 0}
+    Scale: {x: 0.46875003, y: 0.46875003, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Grid/Panel
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Grid/Vines
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Backdrop
+    Position: {x: 0, y: 0, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Backdrop/Sky
+    Position: {x: 0, y: 4.7, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  - Path: Backdrop/Plank
+    Position: {x: 0, y: 3.5000002, z: 0}
+    Scale: {x: 1, y: 1, z: 1}
+    RotationZ: 0
+    Size: {x: 0, y: 0}
+    FontSize: 0
+  _slotsHeight: 1.6
+  _stripHeight: 0.6
+  _queueHeight: 0.9
+  _slotsExtraWidth: 0.4
+  _slotGap: 0.05
+  _basketOverflow: 0.3
+  _basketOffsetY: -0.2
+  _boxWidth: 1.5
+  _boxGap: 0.12
+  _nearSize: 0.4
+  _farSize: 0.3
+  _farAlpha: 0.6
+  _bottomPad: 0.1
+  _dotGap: 0
+  _hangerWidth: 0.08

@@ -10,9 +10,6 @@ namespace SlideJam.Game
     {
         [SerializeField] private Sprite _sprite;
         [SerializeField] private ThemeSkin _skin;
-        [SerializeField] private float _slotGap = 0.2f;
-        [SerializeField] private float _basketOverflow = 0.3f;
-        [SerializeField] private float _basketOffsetY = -0.2f;
         [SerializeField] private Color _emptyColor = new Color(0.22f, 0.22f, 0.22f);
         [SerializeField] private Color _pipOffColor = new Color(0f, 0f, 0f, 0.4f);
         private readonly List<Transform> _popItems = new List<Transform>();
@@ -34,7 +31,10 @@ namespace SlideJam.Game
         private float _spacing;
         private float _pipSize;
         private float _basketWidth;
-        
+        private float _slotGap; // changed: the three layout numbers come from StageLayoutData in Build
+        private float _basketOverflow;
+        private float _basketOffsetY;
+
         private bool Skinned => _skin != null && _skin.BasketFront != null;
         
         public void Init(Func<int, Color> colorOf)
@@ -42,8 +42,11 @@ namespace SlideJam.Game
             _colorOf = colorOf;
         }
 
-        public void Build(int slotCount, int maxCap, Vector2 size)
+        public void Build(int slotCount, int maxCap, Vector2 size, StageLayoutData layout) // changed: layout added
         {
+            _slotGap = layout.SlotGap; // added from here
+            _basketOverflow = layout.BasketOverflow;
+            _basketOffsetY = layout.BasketOffsetY;
             _slotCount = slotCount;
             _maxCap = maxCap;
             _height = size.y;

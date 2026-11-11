@@ -1,62 +1,67 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace SlideJam.Game
 {
     public class StageLayout : MonoBehaviour
     {
+        [SerializeField] private StageLayoutData _data;
         [SerializeField] private Transform _slots;
         [SerializeField] private Transform _strip;
         [SerializeField] private Transform _queue;
         [SerializeField] private Transform _branch;
-        [SerializeField] private Transform _overflow;
-        [SerializeField] private float _overflowHeight = 0.7f;
-        [SerializeField] private float _queueLift = 0.2f;
+        [SerializeField] private Transform _dots;
         [SerializeField] private Transform _grid;
-        [SerializeField] private float _branchHeight = 1f;
-        [SerializeField] private float _slotsHeight = 1.6f;
-        [SerializeField] private float _stripHeight = 0.6f;
-        [SerializeField] private float _queueHeight = 0.9f;
-        [SerializeField] private float _gap = 0.35f;
 
-        public float SlotsHeight => _slotsHeight;
-        public float StripHeight => _stripHeight;
-        public float QueueHeight => _queueHeight;
-        public float Gap => _gap;
-        
+        public StageLayoutData Data => _data;
+
+        public void SetData(StageLayoutData data)
+        {
+            _data = data;
+        }
+
+        // The Stage rectangle from the saved data; it moves nothing, so Play mode can use it to fit the camera.
+        // The top is the top of the slots band and the bottom is the bottom of the board (the Grid anchor is the board's centre).
+        public Rect Measure(int rows, int cols)
+        {
+            Vector3 origin = transform.position;
+            if (_data == null) return new Rect(origin.x - cols / 2f, origin.y - rows / 2f, cols, rows);
+
+            float top = _data.SlotsPosition.y + _data.SlotsHeight / 2f;
+            float bottom = _data.GridPosition.y - rows / 2f;
+            return new Rect(origin.x - cols / 2f, origin.y + bottom, cols, top - bottom);
+        }
+
+        // An authoring tool: puts the anchors where the data says. It does nothing in Play mode, where the scene keeps the
+        // positions that were set in the Editor and only the camera follows the screen. Called by the Setup Scene and Refresh Layout menus.
         public Rect Apply(int rows, int cols)
         {
-            float branch = _branch != null ? _branchHeight + _gap : 0f;
-            float lift = _overflow != null ? Mathf.Clamp(_queueLift, 0f, _gap) : 0f;
-            float overflow = _overflow != null ? _overflowHeight - lift : 0f;
-            float total = _slotsHeight + _stripHeight + _queueHeight + rows + 3f * _gap + branch + overflow;
-            float top = total / 2f;
+            if (Application.isPlaying || _data == null || !_data.HasPositions) return Measure(rows, cols);
 
-            float slotsY = top - _slotsHeight / 2f;
-            float stripY = top - _slotsHeight - _gap - _stripHeight / 2f;
-            float queueBottom = top - _slotsHeight - _gap - _stripHeight - _gap - _queueHeight;
-            float queueY = queueBottom + _queueHeight / 2f + lift;
-            float overflowY = queueBottom + lift - _overflowHeight / 2f;
-            float branchY = queueBottom - overflow - _gap - _branchHeight / 2f;
-            float gridY = -top + rows / 2f;
-
-            bool changed = Place(_slots, slotsY);
-            changed |= Place(_strip, stripY);
-            changed |= Place(_queue, queueY);
-            changed |= Place(_overflow, overflowY);
-            changed |= Place(_branch, branchY);
-            changed |= Place(_grid, gridY);
+            bool changed = Place(_slots, _data.SlotsPosition);
+            changed |= Place(_strip, _data.StripPosition);
+            changed |= Place(_queue, _data.QueuePosition);
+            changed |= Place(_branch, _data.BranchPosition);
+            changed |= Place(_dots, _data.DotsPosition);
+            changed |= Place(_grid, _data.GridPosition);
             changed |= ResetChildren(_grid);
 
+            if (_data.HasScales)
+            {
+                changed |= Scale(_slots, _data.SlotsScale);
+                changed |= Scale(_strip, _data.StripScale);
+                changed |= Scale(_queue, _data.QueueScale);
+                changed |= Scale(_branch, _data.BranchScale);
+                changed |= Scale(_dots, _data.DotsScale);
+                changed |= Scale(_grid, _data.GridScale);
+            }
+
 #if UNITY_EDITOR
-            if (changed && !Application.isPlaying) UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+            if (changed) UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
 #endif
 
-            Vector3 origin = transform.position;
-            return new Rect(origin.x - cols / 2f, origin.y - top, cols, total);
+            return Measure(rows, cols);
         }
-        
+
         private static bool ResetChildren(Transform anchor)
         {
             if (anchor == null) return false;
@@ -73,11 +78,18 @@ namespace SlideJam.Game
             return changed;
         }
 
-        private static bool Place(Transform anchor, float y)
+        private static bool Scale(Transform anchor, Vector3 scale)
         {
             if (anchor == null) return false;
+            if (anchor.localScale == scale) return false;
 
-            var position = new Vector3(0f, y, 0f);
+            anchor.localScale = scale;
+            return true;
+        }
+
+        private static bool Place(Transform anchor, Vector3 position)
+        {
+            if (anchor == null) return false;
             if (anchor.localPosition == position) return false;
 
             anchor.localPosition = position;

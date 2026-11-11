@@ -15,8 +15,9 @@ namespace SlideJam.Game
         [SerializeField] private Sprite _ringOrange;
         [SerializeField] private Color _ringWhiteColor = new Color32(26, 204, 255, 255);
         [SerializeField] private TextMeshPro _label;
-        [SerializeField] private string _toQueueFormat = "+{0} to the queue";
-        [SerializeField] private string _loseText = "Will overflow: you lose";
+        [SerializeField] private Sprite _boxDashed;
+        [SerializeField] private string _toQueueFormat = "+{0}";
+        [SerializeField] private string _loseText = "Lose!";
         [SerializeField] private Color _orange = new Color(0.96f, 0.55f, 0.17f);
         [SerializeField] private Color _red = new Color(0.86f, 0.22f, 0.22f);
 
@@ -51,14 +52,14 @@ namespace SlideJam.Game
 
             bool toQueue = preview.ToQueue > 0;
             Sprite ring = toQueue ? _ringOrange : _ringWhite;
-            Color tint = toQueue ? Color.white : _ringWhiteColor; // changed: only the white ring is tinted
+            Color tint = toQueue ? Color.white : _ringWhiteColor;
             float ringWidth = _board.transform.lossyScale.x / transform.lossyScale.x;
 
             _ringCount = 0;
             foreach (Cell cell in preview.Cells)
             {
                 Vector3 local = transform.InverseTransformPoint(_board.CellToWorld(cell.Row, cell.Col));
-                SpriteRenderer square = _rings.Fit(_ringCount, ring, local, ringWidth, tint); // changed: was Color.white
+                SpriteRenderer square = _rings.Fit(_ringCount, ring, local, ringWidth, tint);
                 _ringScale = square.transform.localScale;
                 _ringCount++;
             }
@@ -97,7 +98,7 @@ namespace SlideJam.Game
                     if (index >= _queue.ChairCount) break;
 
                     Vector3 local = transform.InverseTransformPoint(_queue.ChairWorld(index));
-                    _boxes.Fit(shown, _ringOrange, local, width, new Color(1f, 1f, 1f, 0.9f)); // changed: back to the plain orange sprite
+                    _boxes.Fit(shown, _boxDashed, local, width, Color.white);
                     shown++;
                 }
             }
@@ -108,6 +109,8 @@ namespace SlideJam.Game
         private void ShowLabel(MovePreview preview)
         {
             if (_label == null) return;
+            
+            _label.transform.position = _queue.BoxWorld;
 
             if (preview.Lose)
             {

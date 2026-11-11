@@ -11,19 +11,19 @@ namespace SlideJam.EditorTools
 
         internal static bool Build(GameController controller)
         {
-            var stage = Ref<StageLayout>(controller, "_stageLayout");
-            Transform overflow = stage != null ? Ref<Transform>(stage, "_overflow") : null;
-            if (overflow == null)
+            var queueView = Ref<QueueView>(controller, "_queueView");
+            if (queueView == null)
             {
-                Debug.LogError("Setup Scene: the Overflow anchor is missing, so the preview label has no place.");
+                Debug.LogError("Setup Scene: GameController has an empty QueueView reference.");
                 return false;
             }
 
             var white = AssetDatabase.LoadAssetAtPath<Sprite>(Sprites + "cell_ring_white_54.png");
             var orange = AssetDatabase.LoadAssetAtPath<Sprite>(Sprites + "cell_ring_orange_54.png");
-            if (white == null || orange == null)
+            var dashed = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Sprites/queue/queue_slot_preview_dashed.png");
+            if (white == null || orange == null || dashed == null)
             {
-                Debug.LogError("Setup Scene: the cell_ring_white_54 or cell_ring_orange_54 sprite was not found in " + Sprites);
+                Debug.LogError("Setup Scene: a ring or the dashed box sprite was not found.");
                 return false;
             }
 
@@ -31,20 +31,20 @@ namespace SlideJam.EditorTools
             var view = holder.GetComponent<PreviewView>();
             if (view == null) view = Undo.AddComponent<PreviewView>(holder.gameObject);
 
-            Transform labelObject = Child(overflow, "PreviewLabel");
+            Transform labelObject = Child(queueView.transform, "PreviewLabel");
             var label = labelObject.GetComponent<TextMeshPro>();
             if (label == null) label = Undo.AddComponent<TextMeshPro>(labelObject.gameObject);
 
             label.text = string.Empty;
             label.alignment = TextAlignmentOptions.Center;
-            label.fontSize = 2.4f;
+            label.fontSize = 3f;
             label.enableWordWrapping = false;
             label.sortingOrder = 40;
-            label.rectTransform.sizeDelta = new Vector2(6f, 0.7f);
-            label.rectTransform.localPosition = Vector3.zero;
+            label.rectTransform.sizeDelta = new Vector2(1.5f, 0.6f);
 
             SetRef(view, "_ringWhite", white);
             SetRef(view, "_ringOrange", orange);
+            SetRef(view, "_boxDashed", dashed);
             SetRef(view, "_label", label);
             SetRef(controller, "_previewView", view);
 
