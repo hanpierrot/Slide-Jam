@@ -5,11 +5,8 @@ using UnityEngine;
 
 namespace SlideJam.EditorTools
 {
-    // The only editor menus of the project. Both commands are idempotent: running them again changes nothing that is already right.
     public static class SlideJamMenu
     {
-        // Everything the scene needs, in dependency order: sprite import settings, end overlay, overflow row,
-        // skin and block prefab and backdrop, then the Edit Mode preview of the slot, queue and strip objects
         [MenuItem("Slide Jam/Setup Scene")]
         public static void SetupScene()
         {
@@ -18,11 +15,19 @@ namespace SlideJam.EditorTools
             int group = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName("Setup Scene");
 
+            StageLayoutTool.CaptureItemsIfMissing(controller); // added: before any builder touches the scene, so hand-made changes are not lost
             SceneBuilder.ApplySpriteQuality();
             bool ok = OverlayBuilder.Build();
-            ok &= OverflowBuilder.Build(controller);
+            ok &= QueueBoxBuilder.Build(controller);
+            ok &= PreviewBuilder.Build(controller);
+            ok &= SpawnDotsBuilder.Build(controller); // changed: before BuildArt, so the layout and the skin wiring already see the Dots anchor
+            ok &= StageLayoutTool.Ensure(controller) != null; // added: the layout data, created from the scene the first time
             ok &= SceneBuilder.BuildArt(controller);
-            if (ok) controller.PreviewLayout();
+            if (ok)
+            {
+                controller.PreviewLayout();
+                StageLayoutTool.ApplyItems(controller); // added: the saved layout of every object below the anchors wins over what was just computed
+            }
 
             Undo.CollapseUndoOperations(group);
             EditorSceneManager.MarkSceneDirty(controller.gameObject.scene);
@@ -31,15 +36,28 @@ namespace SlideJam.EditorTools
                 : "Setup Scene: stopped at an error, see the messages above.");
         }
 
-        // After a change to the layout numbers (StageLayout, the level size, GameConfig capacity): lays the Stage out again,
-        // moves the static backdrop and rebuilds the slot, queue and strip objects. No asset or prefab is touched.
         [MenuItem("Slide Jam/Refresh Layout")]
         public static void RefreshLayout()
         {
             if (!TryGetController(out GameController controller)) return;
 
-            if (SceneBuilder.RefreshBackdrop(controller)) controller.PreviewLayout();
+            StageLayoutTool.CaptureItemsIfMissing(controller); // added
+            if (StageLayoutTool.Ensure(controller) != null && SceneBuilder.RefreshBackdrop(controller))
+            {
+                controller.PreviewLayout();
+                StageLayoutTool.ApplyItems(controller); // added
+            }
+
             EditorSceneManager.MarkSceneDirty(controller.gameObject.scene);
+        }
+
+        // added: writes the current anchor positions of the Stage into the StageLayoutData
+        [MenuItem("Slide Jam/Save Stage Layout")]
+        public static void SaveStageLayout()
+        {
+            if (!TryGetController(out GameController controller)) return;
+
+            StageLayoutTool.Save(controller);
         }
 
         private static bool TryGetController(out GameController controller)

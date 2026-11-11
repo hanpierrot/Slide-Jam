@@ -14,21 +14,23 @@ namespace SlideJam.Game
         private SlotsView _slotsView;
         private QueueView _queueView;
         private StripView _stripView;
+        private NextSpawnView _nextSpawnView;
         private GameConfig _config;
         private Action<BoardState> _showProgress;
         private SquarePool _flights;
 
         public void Init(BoardView boardView, SlotsView slotsView, QueueView queueView, StripView stripView,
-            GameConfig config, Action<BoardState> showProgress)
+            NextSpawnView nextSpawnView, GameConfig config, Action<BoardState> showProgress)
         {
             _boardView = boardView;
             _slotsView = slotsView;
             _queueView = queueView;
             _stripView = stripView;
+            _nextSpawnView = nextSpawnView;
             _config = config;
             _showProgress = showProgress;
 
-            _flights = SquarePool.Obtain(_flights, transform, "Flights", FlightSortingOrder); // added
+            _flights = SquarePool.Obtain(_flights, transform, "Flights", FlightSortingOrder);
             _flights.Warm(config.FlightPoolSize);
             _flights.HideFrom(0);
         }
@@ -266,6 +268,7 @@ namespace SlideJam.Game
         
         private IEnumerator PlayFall(Phase fall)
         {
+            if (_nextSpawnView != null) _nextSpawnView.Show(fall.Snap);
             var originOf = new Dictionary<int, Cell>();
             foreach (FallStart start in fall.Starts) originOf[start.Id] = start.From;
 

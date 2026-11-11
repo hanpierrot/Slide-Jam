@@ -48,6 +48,23 @@ namespace SlideJam.Engine
             return new MoveResult(true, next, phases);
         }
         
+        public static MovePreview Preview(BoardState state, Axis axis, int index, int notches)
+        {
+            MoveResult result = Move(state, axis, index, notches);
+            if (!result.Ok) return null;
+
+            foreach (Phase phase in result.Phases)
+            {
+                if (phase.Kind != PhaseKind.Clear) continue;
+
+                int toQueue = result.State.Queue.Count - state.Queue.Count;
+                bool lose = result.State.Ended == EndReason.QueueOverflow;
+                return new MovePreview(phase.MatchedCells, toQueue, lose);
+            }
+
+            return null;
+        }
+        
         public static MoveResult Revive(BoardState state)
         {
             if (state.Ended != EndReason.QueueOverflow) return MoveResult.Rejected(state);

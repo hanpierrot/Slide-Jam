@@ -39,6 +39,11 @@ namespace SlideJam.Game
         public int Count => _items.Count;
         public int Warmed { get; private set; }
         public bool IsAlive => _container != null;
+
+        // added: when true, Fit and Stretch leave the position and the size of a square that is already placed alone and only set its
+        // sprite, colour and active state (the scale follows a change of sprite). A square that was never placed (a new one) still gets
+        // its position and size. The views turn this on in Play mode when the scene was set up for the layout they are building.
+        public bool KeepGeometry { get; set; }
         
         public static SquarePool Obtain(SquarePool existing, Transform owner, string name, int sortingOrder)
         {
@@ -74,6 +79,12 @@ namespace SlideJam.Game
                 return square;
             }
 
+            if (KeepGeometry && IsPlaced(square)) // added
+            {
+                Rebind(square, sprite, color, true);
+                return square;
+            }
+
             square.sprite = sprite;
             float scale = width / sprite.bounds.size.x;
             Place(square, position, new Vector3(scale, scale, 1f), color);
@@ -86,6 +97,12 @@ namespace SlideJam.Game
             if (sprite == null)
             {
                 square.gameObject.SetActive(false);
+                return square;
+            }
+
+            if (KeepGeometry && IsPlaced(square)) // added
+            {
+                Rebind(square, sprite, color, false);
                 return square;
             }
 
@@ -107,6 +124,31 @@ namespace SlideJam.Game
         public void HideFrom(int first)
         {
             for (int i = Mathf.Max(0, first); i < _items.Count; i++) _items[i].gameObject.SetActive(false);
+        }
+
+        // added: a square is placed when it has shown a sprite once or when its transform is not the default one of a new square.
+        // A new square has no sprite and the default transform; a placed one can still sit at the origin with scale 1 (the middle chip).
+        private static bool IsPlaced(SpriteRenderer square)
+        {
+            return square.sprite != null
+                   || square.transform.localPosition != Vector3.zero
+                   || square.transform.localScale != Vector3.one;
+        }
+
+        // added: sets what the content decides (sprite, colour, active); a new sprite keeps the width the square already had
+        private static void Rebind(SpriteRenderer square, Sprite sprite, Color color, bool keepWidth)
+        {
+            Sprite old = square.sprite;
+            if (keepWidth && old != null && old != sprite)
+            {
+                float ratio = old.bounds.size.x / sprite.bounds.size.x;
+                Vector3 scale = square.transform.localScale;
+                square.transform.localScale = new Vector3(scale.x * ratio, scale.y * ratio, scale.z);
+            }
+
+            square.sprite = sprite;
+            square.color = color;
+            square.gameObject.SetActive(true);
         }
 
         private static void Place(SpriteRenderer square, Vector3 position, Vector3 scale, Color color)
