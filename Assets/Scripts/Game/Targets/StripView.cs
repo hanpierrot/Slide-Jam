@@ -17,6 +17,7 @@ namespace SlideJam.Game
         private Func<int, Color> _colorOf;
         private float _spacing;
         private float _itemSize;
+        [SerializeField, HideInInspector] private string _builtKey; // added: the layout stamp of the last Edit Mode build (LayoutStamp)
 
         private bool Skinned => _skin != null;
 
@@ -31,13 +32,19 @@ namespace SlideJam.Game
             _spacing = Mathf.Min(0.7f, size.x / _visible);
             _itemSize = Mathf.Min(_spacing * 0.8f, size.y);
 
+            string key = LayoutStamp.Of(size.x, size.y, _visible, Skinned ? 1f : 0f); // added from here
+            bool keep = LayoutStamp.CanKeep(this, _builtKey, key);
+            LayoutStamp.Record(this, ref _builtKey, key);
+
             _chips = SquarePool.Obtain(_chips, transform, "Chips", 0);
             _chips.Warm(_visible);
             _chips.HideFrom(0);
+            _chips.KeepGeometry = keep; // added
             if (Skinned)
             {
                 _icons = SquarePool.Obtain(_icons, transform, "Icons", 1);
                 _icons.Warm(_visible);
+                _icons.KeepGeometry = keep; // added
             }
 
             _icons?.HideFrom(0);

@@ -32,6 +32,7 @@ namespace SlideJam.Game
         private float _boxUnit;
         private float _boxWidth; // changed: from StageLayoutData in Build
         private float _boxGap;
+        [SerializeField, HideInInspector] private string _builtKey; // added: the layout stamp of the last Edit Mode build (LayoutStamp)
 
         public int ChairCount => _chairCount;
         public float ChairSize => _chairSize;
@@ -54,12 +55,17 @@ namespace SlideJam.Game
             _spacing = Mathf.Min(1f, (size.x - boxWidth - gap) / chairCount);
             _chairSize = Mathf.Min(_spacing * 0.85f, size.y);
             _left = -(chairCount * _spacing + gap + boxWidth) / 2f;
-            PlaceBox(hasBox, boxWidth, gap);
+
+            string key = LayoutStamp.Of(chairCount, size.x, size.y, boxWidth, gap, hasBox ? 1f : 0f); // added from here
+            bool keep = LayoutStamp.CanKeep(this, _builtKey, key);
+            LayoutStamp.Record(this, ref _builtKey, key);
+            PlaceBox(hasBox, boxWidth, gap, keep); // changed: keep added
 
             _chairs = SquarePool.Obtain(_chairs, transform, "Chairs", 0);
             _units = SquarePool.Obtain(_units, transform, "Units", 2);
             _chairs.Warm(chairCount);
             _units.Warm(chairCount + Mathf.Max(1, config.QueueUnitBuffer));
+            _chairs.KeepGeometry = keep; // added: the chairs stand still; the units are always placed
             _chairs.HideFrom(0);
             _units.HideFrom(0);
         }
@@ -130,7 +136,7 @@ namespace SlideJam.Game
             return _units.Count >= state.Queue.Count;
         }
 
-        private void PlaceBox(bool hasBox, float boxWidth, float gap)
+        private void PlaceBox(bool hasBox, float boxWidth, float gap, bool keep) // changed: keep added
         {
             if (hasBox)
             {
@@ -138,8 +144,12 @@ namespace SlideJam.Game
                 _boxHeight = _overflowBox.sprite.bounds.size.y * scale;
                 _boxCenter = new Vector3(_left + _chairCount * _spacing + gap + boxWidth / 2f, 0f, 0f);
                 _boxColumnSpacing = boxWidth * 0.17f;
-                _overflowBox.transform.localPosition = _boxCenter;
-                _overflowBox.transform.localScale = new Vector3(scale, scale, 1f);
+                if (!keep) // changed: the numbers above are always computed (the units use them); the box itself is moved only when the layout changed
+                {
+                    _overflowBox.transform.localPosition = _boxCenter;
+                    _overflowBox.transform.localScale = new Vector3(scale, scale, 1f);
+                }
+
                 _overflowBox.gameObject.SetActive(true);
             }
             else

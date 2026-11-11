@@ -2364,6 +2364,10 @@ PrefabInstance:
       propertyPath: m_LocalPosition.y
       value: 0.83666676
       objectReference: {fileID: 0}
+    - target: {fileID: 1803871225090918735, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
+      propertyPath: _builtKey
+      value: 6|0.4|0.3|0.6|0.1|0|0.08
+      objectReference: {fileID: 0}
     - target: {fileID: 1922760454217291698, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.40625
@@ -2399,6 +2403,10 @@ PrefabInstance:
     - target: {fileID: 1982888611014272210, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
       propertyPath: m_WasSpriteAssigned
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1984559951729903953, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
+      propertyPath: _builtKey
+      value: 5|6|0.9|1.5|0.12|1
       objectReference: {fileID: 0}
     - target: {fileID: 1984559951729903953, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
       propertyPath: _overflowPlank
@@ -2695,6 +2703,10 @@ PrefabInstance:
     - target: {fileID: 4561788894243160342, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4562017683060208203, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
+      propertyPath: _builtKey
+      value: 3|5|6.4|1.6|0.05|0.3|-0.2|1
       objectReference: {fileID: 0}
     - target: {fileID: 4575740410154541523, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
       propertyPath: m_Size.x
@@ -3007,6 +3019,10 @@ PrefabInstance:
     - target: {fileID: 6827247217333580100, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
       propertyPath: m_LocalPosition.y
       value: 0.74
+      objectReference: {fileID: 0}
+    - target: {fileID: 6837880110027758052, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
+      propertyPath: _builtKey
+      value: 6|0.6|5|1
       objectReference: {fileID: 0}
     - target: {fileID: 6864211480891053996, guid: df1bce887895a474a944b9f9224e9ff8, type: 3}
       propertyPath: m_LocalScale.x

@@ -14,6 +14,7 @@ namespace SlideJam.Game
         private float _bottomPad;
         private float _dotGap;
         private float _hangerWidth;
+        [SerializeField, HideInInspector] private string _builtKey; // added: the layout stamp of the last Edit Mode build (LayoutStamp)
         private SquarePool _hangers;
         private SquarePool _icons;
         private int _cols;
@@ -37,6 +38,12 @@ namespace SlideJam.Game
             _icons.Warm(cols * 2);
             _hangers.HideFrom(0);
             _icons.HideFrom(0);
+
+            string key = LayoutStamp.Of(cols, _nearSize, _farSize, _farAlpha, _bottomPad, _dotGap, _hangerWidth); // added from here
+            bool keep = LayoutStamp.CanKeep(this, _builtKey, key);
+            LayoutStamp.Record(this, ref _builtKey, key);
+            _hangers.KeepGeometry = keep; // the dots and the hangers stand still; only their sprites change
+            _icons.KeepGeometry = keep;
         }
 
         public void Show(BoardState state)

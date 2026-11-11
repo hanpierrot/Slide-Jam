@@ -34,6 +34,7 @@ namespace SlideJam.Game
         private float _slotGap; // changed: the three layout numbers come from StageLayoutData in Build
         private float _basketOverflow;
         private float _basketOffsetY;
+        [SerializeField, HideInInspector] private string _builtKey; // added: the layout stamp of the last Edit Mode build (LayoutStamp)
 
         private bool Skinned => _skin != null && _skin.BasketFront != null;
         
@@ -54,11 +55,16 @@ namespace SlideJam.Game
             _spacing = _slotWidth / maxCap;
             _pipSize = Mathf.Min(_spacing * 0.7f, size.y * 0.3f);
             _basketWidth = 0f;
-            
+
+            string key = LayoutStamp.Of(slotCount, maxCap, size.x, size.y, _slotGap, _basketOverflow, _basketOffsetY, Skinned ? 1f : 0f); // added from here
+            bool keep = LayoutStamp.CanKeep(this, _builtKey, key); // Play mode: the scene already has this layout
+            LayoutStamp.Record(this, ref _builtKey, key); // Edit Mode: remember what the scene was built for
+
             _backs = SquarePool.Obtain(_backs, transform, "Backs", 1);
             _pipSlots = SquarePool.Obtain(_pipSlots, transform, "PipSlots", 2);
             _backs.Warm(slotCount);
             _pipSlots.Warm(slotCount * maxCap);
+            _backs.KeepGeometry = keep; // added: the basket parts stand still; the pips and fruits depend on the cap, so they are always placed
 
             if (Skinned)
             {
@@ -73,6 +79,8 @@ namespace SlideJam.Game
                 _fruits.Warm(slotCount * maxCap);
                 _fronts.Warm(slotCount);
                 _locks.Warm(slotCount);
+                _shadows.KeepGeometry = keep; // added
+                _fronts.KeepGeometry = keep;
             }
 
             HideAll();
