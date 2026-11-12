@@ -36,7 +36,7 @@ namespace SlideJam.Engine
             for (int i = 0; i < Slots.Length && SeqI < Seq.Length; i++)
             {
                 Target target = Seq[SeqI];
-                Slots[i] = new Slot(target.Color, target.Cap, Pre[SeqI], false);
+                Slots[i] = new Slot(target.Color, target.Cap, Pre[SeqI], i == level.LockedSlotIndex);
                 SeqI++;
             }
         }
@@ -81,6 +81,7 @@ namespace SlideJam.Engine
                     {
                         h = Mix(h, (uint)Grid[r, c].Id);
                         h = Mix(h, (uint)Grid[r, c].Color);
+                        if (Grid[r, c].IsSpecial) h = Mix(h, Grid[r, c].Signature);
                     }
                 }
 
@@ -88,7 +89,7 @@ namespace SlideJam.Engine
                 h = Mix(h, (uint)NextId);
                 h = Mix(h, (uint)Moves);
 
-                foreach (Slot slot in Slots) // added from here
+                foreach (Slot slot in Slots)
                 {
                     h = Mix(h, (uint)slot.Color);
                     h = Mix(h, (uint)slot.Cap);

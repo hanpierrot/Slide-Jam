@@ -45,3 +45,6 @@ MonoBehaviour:
     Cap: 3
   - Color: 1
     Cap: 3
+  _lockedSlotIndex: -1
+  _specials: []
+  _number: 1

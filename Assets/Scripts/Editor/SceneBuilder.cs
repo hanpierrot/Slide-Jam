@@ -105,6 +105,13 @@ namespace SlideJam.EditorTools
             so.FindProperty("_queueLocked").objectReferenceValue = Load("queue/queue_slot_locked");
             so.FindProperty("_basketShadow").objectReferenceValue = Load("basket/basket_shadow");
             so.FindProperty("_basketFront").objectReferenceValue = Load("basket/basket_front");
+            so.FindProperty("_badgeX2").objectReferenceValue = Load("board/badge_x2");
+            so.FindProperty("_badgeSpring").objectReferenceValue = Load("board/badge_spring");
+            so.FindProperty("_dualDivider").objectReferenceValue = Load("board/dual_divider_48");
+            so.FindProperty("_sealOutline").objectReferenceValue = Load("board/seal_outline_48");
+            SerializedProperty sealBadges = so.FindProperty("_sealBadges");
+            sealBadges.arraySize = 3;
+            for (int n = 0; n < 3; n++) sealBadges.GetArrayElementAtIndex(n).objectReferenceValue = Load("board/seal_badge_" + (n + 1));
 
             SerializedProperty fruits = so.FindProperty("_fruits");
             fruits.arraySize = BasketNames.Length;
@@ -153,7 +160,30 @@ namespace SlideJam.EditorTools
                 icon.maskInteraction = tile.maskInteraction;
                 icon.enabled = false;
 
+                Transform badgeTransform = root.transform.Find("Badge");
+                if (badgeTransform == null)
+                {
+                    var created = new GameObject("Badge");
+                    created.transform.SetParent(root.transform, false);
+                    badgeTransform = created.transform;
+                }
+
+                var badge = badgeTransform.GetComponent<SpriteRenderer>();
+                if (badge == null) badge = badgeTransform.gameObject.AddComponent<SpriteRenderer>();
+                badge.sortingLayerID = tile.sortingLayerID;
+                badge.sortingOrder = tile.sortingOrder + 2;
+                badge.maskInteraction = tile.maskInteraction;
+                badge.enabled = false;
+                
+                SpriteRenderer icon2 = EnsureLayer(root.transform, "Icon2", tile, 1);
+                SpriteRenderer outline = EnsureLayer(root.transform, "SealOutline", tile, 2);
+                SpriteRenderer divider = EnsureLayer(root.transform, "Divider", tile, 2); 
+                
                 SetRef(root.GetComponent<BlockView>(), "_icon", icon);
+                SetRef(root.GetComponent<BlockView>(), "_badge", badge);
+                SetRef(root.GetComponent<BlockView>(), "_icon2", icon2);
+                SetRef(root.GetComponent<BlockView>(), "_divider", divider);
+                SetRef(root.GetComponent<BlockView>(), "_outline", outline);
                 PrefabUtility.SaveAsPrefabAsset(root, BlockPrefabPath);
             }
             finally
@@ -202,6 +232,27 @@ namespace SlideJam.EditorTools
             Undo.RegisterCreatedObjectUndo(go, "Build Scene Art");
             go.transform.SetParent(parent, false);
             return go.transform;
+        }
+        
+        private static SpriteRenderer EnsureLayer(Transform root, string name, SpriteRenderer tile, int orderOffset)
+        {
+            Transform layer = root.Find(name);
+            if (layer == null)
+            {
+                var created = new GameObject(name);
+                created.transform.SetParent(root, false);
+                layer = created.transform;
+            }
+
+            layer.localPosition = Vector3.zero;
+            layer.localScale = Vector3.one;
+            var renderer = layer.GetComponent<SpriteRenderer>();
+            if (renderer == null) renderer = layer.gameObject.AddComponent<SpriteRenderer>();
+            renderer.sortingLayerID = tile.sortingLayerID;
+            renderer.sortingOrder = tile.sortingOrder + orderOffset;
+            renderer.maskInteraction = tile.maskInteraction;
+            renderer.enabled = false;
+            return renderer;
         }
 
         private static void Put(Transform parent, string name, string spritePath, Vector3 localPosition, int order)

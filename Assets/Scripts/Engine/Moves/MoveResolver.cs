@@ -14,7 +14,7 @@ namespace SlideJam.Engine
             if (index < 0 || index >= lines) throw new ArgumentOutOfRangeException(nameof(index));
             if (state.Ended.HasValue) return MoveResult.Rejected(state);
 
-            const int step = 1;
+            int step = Board.StepOf(state, axis, index); 
             int k = Board.ShiftAmount(notches, step, Board.LineLength(level, axis));
             if (k == 0) return MoveResult.Rejected(state);
 
@@ -32,7 +32,8 @@ namespace SlideJam.Engine
                 if (round > MaxRounds) throw new InvalidOperationException("Resolution did not finish.");
 
                 List<Flight> flights = Resolution.RouteUnits(next, matched, round, out int vanished);
-                phases.Add(Phase.Clear(next.Clone(), round, matched, flights, vanished));
+                List<int> unsealed = Resolution.OpenSeals(next, matched);
+                phases.Add(Phase.Clear(next.Clone(), round, matched, flights, vanished, unsealed));
 
                 Resolution.CompleteAndPull(next, phases);
                 Resolution.CheckEnd(next);

@@ -4,6 +4,9 @@ namespace SlideJam.Engine
 {
     public static class Resolution
     {
+        private static readonly int[] NeighbourRow = { -1, 1, 0, 0 };
+        private static readonly int[] NeighbourCol = { 0, 0, -1, 1 };
+        
         public static List<Flight> RouteUnits(BoardState state, IReadOnlyList<Cell> cells, int round, out int vanished)
         {
             var flights = new List<Flight>(cells.Count);
@@ -11,30 +14,67 @@ namespace SlideJam.Engine
 
             foreach (Cell cell in cells)
             {
-                int color = state.Grid[cell.Row, cell.Col].Color;
+                Block block = state.Grid[cell.Row, cell.Col];
+                int color = block.Color;
                 state.Grid[cell.Row, cell.Col] = Block.Empty;
 
-                Place to;
-                int slot = FindSlot(state, color);
-                if (slot >= 0)
+                int units = block.X2 ? 2 : 1;
+                for (int unit = 0; unit < units; unit++)
                 {
-                    to = Fill(state, slot);
+                    int unitColor = color;
+                    int slot = FindSlot(state, unitColor);
+                    if (slot < 0 && block.HasDual)
+                    {
+                        slot = FindSlot(state, block.DualColor);
+                        if (slot >= 0) unitColor = block.DualColor;
+                    }
+                    
+                    Place to;
+                    if (slot >= 0)
+                    {
+                        to = Fill(state, slot);
+                    }
+                    else if (round == 1)
+                    {
+                        state.Queue.Add(unitColor);
+                        to = Place.InQueue(state.Queue.Count - 1);
+                    }
+                    else
+                    {
+                        vanished++;
+                        to = Place.ToVanish;
+                    }
+                    
+                    flights.Add(new Flight(unitColor, Place.InGrid(cell), to));
                 }
-                else if (round == 1)
-                {
-                    state.Queue.Add(color);
-                    to = Place.InQueue(state.Queue.Count - 1);
-                }
-                else
-                {
-                    vanished++;
-                    to = Place.ToVanish;
-                }
-
-                flights.Add(new Flight(color, Place.InGrid(cell), to));
             }
 
             return flights;
+        }
+
+        public static List<int> OpenSeals(BoardState state, IReadOnlyList<Cell> consumed)
+        {
+            var opened = new List<int>();
+            int rows = state.Level.Rows;
+            int cols = state.Level.Cols;
+            foreach (Cell cell in consumed)
+            {
+                for (int d = 0; d < 4; d++)
+                {
+                    int row = cell.Row + NeighbourRow[d];
+                    int col = cell.Col + NeighbourCol[d];
+                    if (row < 0 || row >= rows || col < 0 || col >= cols) continue;
+
+                    Block block = state.Grid[row, col];
+                    if (!block.IsSealed) continue;
+
+                    Block lowered = block.WithSeal(block.Seal - 1);
+                    state.Grid[row, col] = lowered;
+                    if (!lowered.IsSealed) opened.Add(block.Id);
+                }
+            }
+
+            return opened;
         }
         
         public static void CompleteAndPull(BoardState state, List<Phase> phases)
@@ -44,8 +84,8 @@ namespace SlideJam.Engine
                 int slot = FirstFull(state);
                 if (slot < 0) return;
 
-                Complete(state, slot);
-                phases.Add(Phase.Complete(state.Clone(), slot));
+                List<int> unlocked = Complete(state, slot);
+                phases.Add(Phase.Complete(state.Clone(), slot, unlocked));
 
                 List<Flight> pulled = Pull(state);
                 if (pulled.Count > 0) phases.Add(Phase.Pull(state.Clone(), pulled));
@@ -98,7 +138,7 @@ namespace SlideJam.Engine
             return -1;
         }
         
-        private static void Complete(BoardState state, int slot)
+        private static List<int> Complete(BoardState state, int slot)
         {
             state.Done++;
             if (state.SeqI < state.Seq.Length)
@@ -112,7 +152,20 @@ namespace SlideJam.Engine
                 state.Slots[slot] = Slot.Empty;
             }
 
+            var unlocked = new List<int>();
+            Unlock(state, slot - 1, unlocked);
+            Unlock(state, slot + 1, unlocked);
+
             if (state.Level.QGrow && state.QOpen < state.Level.QueueMax) state.QOpen++;
+            return unlocked;
+        }
+
+        private static void Unlock(BoardState state, int index, List<int> unlocked)
+        {
+            if (index < 0 || index >= state.Slots.Length || !state.Slots[index].Locked) return;
+
+            state.Slots[index] = state.Slots[index].WithLocked(false);
+            unlocked.Add(index);
         }
 
         private static List<Flight> Pull(BoardState state)

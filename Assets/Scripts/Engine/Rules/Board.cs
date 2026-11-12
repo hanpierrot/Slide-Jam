@@ -17,6 +17,18 @@ namespace SlideJam.Engine
         {
             return FloorMod(notches * step, length);
         }
+        
+        public static int StepOf(BoardState state, Axis axis, int index)
+        {
+            int length = LineLength(state.Level, axis);
+            for (int i = 0; i < length; i++)
+            {
+                if (Get(state.Grid, axis, index, i).Spring) return 2;
+            }
+
+            return 1;
+        }
+
 
         public static void Shift(Block[,] grid, Axis axis, int index, int k)
         {

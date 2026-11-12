@@ -33,7 +33,7 @@ namespace SlideJam.Game
         private int _previewNotches;
         
         private GameConfig Config => _gameManager != null ? _gameManager.Config : null;
-        private StageLayoutData Layout => _stageLayout != null ? _stageLayout.Data : null; // added: the sizes of the Stage views
+        private StageLayoutData Layout => _stageLayout != null ? _stageLayout.Data : null;
 
         private Coroutine _run;
         
@@ -82,11 +82,11 @@ namespace SlideJam.Game
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (_levelConfig == null || Application.isPlaying) return; // changed: the Edit Mode preview only
+            if (_levelConfig == null || Application.isPlaying) return;
             if (_boardView != null) _boardView.SetPreviewSize(_levelConfig.Rows, _levelConfig.Cols);
             if (_stageLayout != null && _cameraFit != null)
             {
-                Rect bounds = _stageLayout.Measure(_levelConfig.Rows, _levelConfig.Cols); // changed: measure only, so a hand-moved anchor is never put back by an Inspector change
+                Rect bounds = _stageLayout.Measure(_levelConfig.Rows, _levelConfig.Cols);
                 _cameraFit.SetPreviewBounds(bounds);
             }
         }
@@ -96,7 +96,7 @@ namespace SlideJam.Game
             if (Application.isPlaying) return;
 
             if (Config == null || _levelConfig == null || _stageLayout == null || _cameraFit == null
-                || _boardView == null || _slotsView == null || _queueView == null || _stripView == null || Layout == null) // changed: the layout data too
+                || _boardView == null || _slotsView == null || _queueView == null || _stripView == null || Layout == null)
             {
                 Debug.LogWarning("Preview Layout needs every reference on GameController to be assigned, and a StageLayoutData on the StageLayout.");
                 return;
@@ -112,7 +112,7 @@ namespace SlideJam.Game
             _slotsView.Init(_boardView.ColorOf);
             _queueView.Init(_boardView.ColorOf);
             _stripView.Init(_boardView.ColorOf);
-            BuildViews(level, Layout); // changed: one place builds the Stage views
+            BuildViews(level, Layout);
             _slotsView.Show(state);
             _queueView.Show(state);
             _stripView.Show(state);
@@ -139,7 +139,7 @@ namespace SlideJam.Game
 
             if (Layout == null)
             {
-                Debug.LogError("The StageLayout has no StageLayoutData. Run Slide Jam > Setup Scene."); // added
+                Debug.LogError("The StageLayout has no StageLayoutData. Run Slide Jam > Setup Scene.");
                 return;
             }
 
@@ -148,7 +148,7 @@ namespace SlideJam.Game
             SetBusy(false);
             Rect bounds = _stageLayout.Measure(level.Rows, level.Cols);
             _boardView.Build(level);
-            BuildViews(level, Layout); // changed
+            BuildViews(level, Layout);
             _cameraFit.Fit(bounds);
             _hudView.ShowLevel(_levelConfig.Number);
             ShowAll();
@@ -172,6 +172,8 @@ namespace SlideJam.Game
             if (IsBusy) return false;
 
             BoardState before = State;
+            int step = Board.StepOf(before, axis, index);
+            float startCells = startOffset * step;
             MoveResult result = MoveResolver.Move(before, axis, index, notches);
             if (_logMoves)
             {
@@ -182,20 +184,21 @@ namespace SlideJam.Game
 
             if (!result.Ok)
             {
-                _run = StartCoroutine(Run(_phasePlayer.SnapBack(before, axis, index, startOffset)));
+                _run = StartCoroutine(Run(_phasePlayer.SnapBack(before, axis, index, startCells)));
                 return false;
             }
             
             if (previewKnown && !PreviewMatches(expected, before, result)) Debug.LogError("The drag preview differs from the move that was played (I5).");
 
             State = result.State;
-            _run = StartCoroutine(Run(_phasePlayer.PlayMove(before, result, axis, index, startOffset, notches)));
+            _run = StartCoroutine(Run(_phasePlayer.PlayMove(before, result, axis, index, startCells, notches * step)));
             return true;
         }
         
         private void OnDragging(LineDrag drag)
         {
-            _boardView.ShowLineOffset(State, drag.Axis, drag.Index, drag.Offset);
+            int step = Board.StepOf(State, drag.Axis, drag.Index);
+            _boardView.ShowLineOffset(State, drag.Axis, drag.Index, drag.Offset * step);
             UpdatePreview(drag);
         }
 
@@ -224,7 +227,6 @@ namespace SlideJam.Game
             ShowProgress(State);
         }
         
-        // added: the slot, queue, strip and next-spawn views draw with the sizes of the layout data
         private void BuildViews(LevelData level, StageLayoutData layout)
         {
             _slotsView.Build(level.ActiveSlots, Config.CapMax, new Vector2(level.Cols + layout.SlotsExtraWidth, layout.SlotsHeight), layout);

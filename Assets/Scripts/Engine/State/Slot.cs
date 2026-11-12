@@ -23,5 +23,10 @@ namespace SlideJam.Engine
         {
             return new Slot(Color, Cap, count, Locked);
         }
+
+        public Slot WithLocked(bool locked) // added: a locked slot opens when its neighbour completes (DESIGN 5.4)
+        {
+            return new Slot(Color, Cap, Count, locked);
+        }
     }
 }

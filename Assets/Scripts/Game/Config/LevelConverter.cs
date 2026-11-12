@@ -11,6 +11,14 @@ namespace SlideJam.Game
         public static LevelData Convert(string levelName, int rows, int cols, int colors, int seed, int activeSlots,
             int queueMax, int qOpenStart, bool qGrow, IReadOnlyList<TargetEntry> targets, int capMin, int capMax)
         {
+            return Convert(levelName, rows, cols, colors, seed, activeSlots, queueMax, qOpenStart, qGrow, targets,
+                new List<SpecialEntry>(), -1, capMin, capMax);
+        }
+        
+        public static LevelData Convert(string levelName, int rows, int cols, int colors, int seed, int activeSlots,
+            int queueMax, int qOpenStart, bool qGrow, IReadOnlyList<TargetEntry> targets,
+            IReadOnlyList<SpecialEntry> specials, int lockedSlotIndex, int capMin, int capMax)
+        {
             if (capMin > capMax)
             {
                 throw new ArgumentException($"GameConfig: capMin ({capMin}) is above capMax ({capMax}).");
@@ -29,7 +37,16 @@ namespace SlideJam.Game
                 seq[i] = new Target(entry.Color, entry.Cap);
             }
 
-            return new LevelData(rows, cols, colors, unchecked((uint)seed), activeSlots, queueMax, qOpenStart, qGrow, seq);
+            var blocks = new SpecialBlock[specials.Count];
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                SpecialEntry e = specials[i];
+                blocks[i] = new SpecialBlock(e.Row, e.Col, e.UseColor ? e.Color : -1, e.X2, e.Dual ? e.DualColor : -1,
+                    e.Seal, e.Spring, e.ChainLayers, e.ChainLock); // changed: the switches turn the colours on
+            }
+
+            return new LevelData(rows, cols, colors, unchecked((uint)seed), activeSlots, queueMax, qOpenStart, qGrow, seq,
+                lockedSlotIndex, blocks);
         }
     }
 }

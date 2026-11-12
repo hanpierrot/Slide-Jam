@@ -285,7 +285,7 @@ namespace SlideJam.Game
                     if (block.IsEmpty || !originOf.TryGetValue(block.Id, out Cell origin)) continue;
 
                     Vector3 from = _boardView.CellToLocal(origin.Row, origin.Col);
-                    movers.Add(_boardView.ShowBlock(block.Id, block.Color, from));
+                    movers.Add(_boardView.ShowBlock(block, from)); // changed: the whole block
                     fromPos.Add(from);
                     toPos.Add(_boardView.CellToLocal(r, c));
                     longest = Mathf.Max(longest, r - origin.Row);

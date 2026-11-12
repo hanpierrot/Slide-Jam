@@ -92,7 +92,7 @@ namespace SlideJam.Game
                     if (block.IsEmpty) continue;
 
                     BlockView view = GetOrCreate(block.Id);
-                    view.Bind(block.Id, ColorOf(block.Color), IconOf(block.Color));
+                    BindView(view, block);
                     view.transform.localPosition = CellToLocal(r, c);
                 }
             }
@@ -116,10 +116,10 @@ namespace SlideJam.Game
             return _views.TryGetValue(id, out view);
         }
 
-        public BlockView ShowBlock(int id, int color, Vector3 localPosition)
+        public BlockView ShowBlock(Block block, Vector3 localPosition)
         {
-            BlockView view = GetOrCreate(id);
-            view.Bind(id, ColorOf(color), IconOf(color));
+            BlockView view = GetOrCreate(block.Id);
+            BindView(view, block);
             view.transform.localPosition = localPosition;
             return view;
         }
@@ -198,6 +198,23 @@ namespace SlideJam.Game
         private Sprite IconOf(int color)
         {
             return _skin != null ? _skin.Fruit(color).Icon : null;
+        }
+        
+        private void BindView(BlockView view, Block block)
+        {
+            Sprite second = block.HasDual ? IconOf(block.DualColor) : null;
+            Sprite divider = block.HasDual && _skin != null ? _skin.DualDivider : null;
+            Sprite outline = block.IsSealed && _skin != null ? _skin.SealOutline : null;
+            view.Bind(block.Id, ColorOf(block.Color), IconOf(block.Color), BadgeOf(block), second, divider, outline);
+        }
+
+        private Sprite BadgeOf(Block block)
+        {
+            if (_skin == null) return null;
+
+            if (block.IsSealed) return _skin.SealBadge(block.Seal);
+            if (block.X2) return _skin.BadgeX2;
+            return block.Spring ? _skin.BadgeSpring : null;
         }
         
 #if UNITY_EDITOR

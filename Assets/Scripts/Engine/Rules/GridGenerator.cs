@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace SlideJam.Engine
 {
@@ -21,10 +22,29 @@ namespace SlideJam.Engine
                     do
                     {
                         if (++tries > MaxDrawsPerCell) throw new InvalidOperationException("Grid generation did not settle.");
-                        color = ColumnStream.At(level.Seed, GridStreamColumn, draw++, level.Colors); // NEW
+                        color = ColumnStream.At(level.Seed, GridStreamColumn, draw++, level.Colors);
                     } while (WouldMatch(grid, r, c, color));
 
                     grid[r, c] = new Block(id++, color);
+                }
+            }
+
+            foreach (SpecialBlock special in level.Specials)
+            {
+                Block rolled = grid[special.Row, special.Col];
+                int color = special.Color >= 0 ? special.Color : rolled.Color;
+                grid[special.Row, special.Col] = special.ToBlock(rolled.Id, color);
+            }
+            
+            if (level.Specials.Count > 0)
+            {
+                List<Cell> matched = Matcher.Find(grid); // changed: the message says where
+                if (matched.Count > 0)
+                {
+                    Cell first = matched[0];
+                    throw new InvalidOperationException("Level data: the special blocks leave a match in the initial grid (first cell: row "
+                                                        + first.Row + ", column " + first.Col
+                                                        + "). A dual block counts as both of its colours: move it, or change its second colour.");
                 }
             }
 

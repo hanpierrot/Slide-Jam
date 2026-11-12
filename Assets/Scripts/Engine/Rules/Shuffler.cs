@@ -20,20 +20,31 @@ namespace SlideJam.Engine
             int draw = 0;
             var order = new int[count];
             var candidate = new Block[rows, cols];
+            var movable = new List<int>();
+            
+            for (int i = 0; i < count; i++)
+            {
+                if (!original[i].IsSpecial) movable.Add(i);
+            }
+            
+            int moves = movable.Count;
+            var permutation = new int[moves];
 
             for (int attempt = 0; attempt < MaxAttempts; attempt++)
             {
                 for (int i = 0; i < count; i++) order[i] = i;
-
-                for (int i = count - 1; i > 0; i--)
+                for (int k = 0; k < moves; k++) permutation[k] = k;
+                
+                for (int k = moves - 1; k > 0; k--)
                 {
                     uint r = Mulberry32.At(seed, draw++);
-                    int j = (int)(((ulong)r * (uint)(i + 1)) >> 32);
-                    int swap = order[i];
-                    order[i] = order[j];
-                    order[j] = swap;
+                    int j = (int)(((ulong)r * (uint)(k + 1)) >> 32);
+                    int swap = permutation[k];
+                    permutation[k] = permutation[j];
+                    permutation[j] = swap;
                 }
 
+                for (int k = 0; k < moves; k++) order[movable[k]] = movable[permutation[k]];
                 for (int i = 0; i < count; i++) candidate[i / cols, i % cols] = original[order[i]];
                 if (!Matcher.HasMatch(candidate)) break;
             }
