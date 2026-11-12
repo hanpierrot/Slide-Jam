@@ -193,9 +193,9 @@ Your change is not done until all of these hold:
 | An undo followed by the same move gives a different result | The snapshot doesn't include the stream pointers (`ptr`), or something outside the snapshot holds state (a static field, a cache) |
 | An empty cell stays in the board after a move | The settle's sand rule doesn't reach it (§5.5), or you are looking at a lost state (a loss is reported before the final settle) |
 | A cascade's leftovers went to the queue | The round number is wrong (it must restart at 1 on each slide and be 2 or more for cascades), or the unit was placed before the check (I6) |
-| A move with a spring does nothing | The shift is zero (an even line length with step 2 at half a revolution). Keep spring lines odd or handle the case |
+| A move with a spring does nothing | The shift is zero (`k = (notches × 2) mod m` is 0, for example an even number of free cells at half a revolution). Keep the free cells of a spring line odd or handle the case |
 | The row doesn't move but the lock looks cleared | The chain was removed during the move; the preview ran on the old state. Re-run the preview after the state changes |
-| A chain block moves when a column slides | Expected for a `row` or `col` chain along its free axis. "Locked" is not "immovable"; only the settle never moves it |
+| A chain block does not move when a line slides | Expected: a chain block is fixed to its cell, neither the settle nor a slide moves it. A slide rotates the other blocks of the line around it and jumps over its cell (`DESIGN.md` §5.2); a `row` or `col` chain only decides which line cannot be slid |
 | A seed gives a different level in the editor and in a test | Something other than `uint` arithmetic is in the generator (a `float`, `int` overflow checks, `System.Random`), or the stream order changed |
 | The Play Mode check reports mismatches | The view applied a different shift than the engine (check the notch rounding and the spring step), or the check read the state before the animation finished |
 | A level cannot be won | A lock has no exit (I7) or the level is too hard. Play a game by hand in a test, print the board and check each lock |

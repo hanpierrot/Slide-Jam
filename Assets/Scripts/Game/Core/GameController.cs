@@ -31,6 +31,7 @@ namespace SlideJam.Game
         private Axis _previewAxis;
         private int _previewIndex;
         private int _previewNotches;
+        private bool _lockedFlashed;
         
         private GameConfig Config => _gameManager != null ? _gameManager.Config : null;
         private StageLayoutData Layout => _stageLayout != null ? _stageLayout.Data : null;
@@ -128,6 +129,7 @@ namespace SlideJam.Game
             if (_run != null) StopCoroutine(_run);
             _run = null;
             ClearPreview();
+            _lockedFlashed = false;
             _phasePlayer.CancelFlights();
             _endOverlay.Hide();
 
@@ -197,6 +199,13 @@ namespace SlideJam.Game
         
         private void OnDragging(LineDrag drag)
         {
+            if (Board.LineLocked(State, drag.Axis, drag.Index))
+            {
+                if (!_lockedFlashed && _previewView != null) _previewView.FlashLine(drag.Axis, drag.Index, State.Level.Rows, State.Level.Cols);
+                _lockedFlashed = true;
+                return;
+            }
+            
             int step = Board.StepOf(State, drag.Axis, drag.Index);
             _boardView.ShowLineOffset(State, drag.Axis, drag.Index, drag.Offset * step);
             UpdatePreview(drag);
@@ -204,6 +213,13 @@ namespace SlideJam.Game
 
         private void OnReleased(LineDrag drag)
         {
+            _lockedFlashed = false;
+            if (Board.LineLocked(State, drag.Axis, drag.Index))
+            {
+                ClearPreview();
+                return;
+            }
+            
             bool known = IsPreviewFor(drag);
             MovePreview expected = known ? _preview : null;
             ClearPreview();

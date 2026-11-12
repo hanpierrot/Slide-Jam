@@ -5,6 +5,16 @@ using UnityEngine;
 
 namespace SlideJam.Game
 {
+    public struct BlockLook
+    {
+        public Sprite Icon;
+        public Sprite Badge;
+        public Sprite SecondIcon;
+        public Sprite Divider;
+        public Sprite SealOutline;
+        public Sprite Chain;
+    }
+
     [RequireComponent(typeof(SpriteRenderer))]
     public class BlockView : MonoBehaviour
     {
@@ -18,6 +28,7 @@ namespace SlideJam.Game
         [SerializeField] private float _dualOffset = 0.2f;
         [SerializeField] private SpriteRenderer _outline;
         [SerializeField, Range(0f, 1f)] private float _sealedAlpha = 0.45f;
+        [SerializeField] private SpriteRenderer _chain;
 
         private SpriteRenderer _spriteRenderer;
         private Vector3 _restScale;
@@ -32,27 +43,27 @@ namespace SlideJam.Game
             if (_icon != null) _iconScale = _icon.transform.localScale;
         }
 
-        public void Bind(int id, Color color, Sprite icon, Sprite badge = null, Sprite secondIcon = null, Sprite divider = null,
-            Sprite sealOutline = null)
+        public void Bind(int id, Color color, BlockLook look)
         {
             Id = id;
-            bool skinned = icon != null && _icon != null;
-            bool dual = skinned && secondIcon != null && _icon2 != null;
-            bool sealedBlock = sealOutline != null;
+            bool skinned = look.Icon != null && _icon != null;
+            bool dual = skinned && look.SecondIcon != null && _icon2 != null;
+            bool sealedBlock = look.SealOutline != null;
             Color tint = sealedBlock ? new Color(1f, 1f, 1f, _sealedAlpha) : Color.white;
             if (_icon != null)
             {
-                _icon.sprite = icon;
+                _icon.sprite = look.Icon;
                 _icon.enabled = skinned;
                 _icon.color = tint;
                 _icon.transform.localScale = dual ? _iconScale * _dualScale : _iconScale;
                 _icon.transform.localPosition = dual ? new Vector3(-_dualOffset, _dualOffset, 0f) : Vector3.zero;
             }
 
-            ShowDual(dual, secondIcon, divider, tint);
-            ShowOutline(sealOutline);
+            ShowDual(dual, look.SecondIcon, look.Divider, tint);
+            ShowLayer(_outline, look.SealOutline);
+            ShowLayer(_chain, look.Chain);
             _spriteRenderer.color = skinned ? Color.white : color;
-            ShowBadge(badge);
+            ShowBadge(look.Badge);
         }
 
         public void SetScaleFactor(float factor)
@@ -65,7 +76,7 @@ namespace SlideJam.Game
             transform.localScale = _restScale;
         }
 
-        private void ShowDual(bool dual, Sprite secondIcon, Sprite divider, Color tint) 
+        private void ShowDual(bool dual, Sprite secondIcon, Sprite divider, Color tint)
         {
             if (_icon2 != null)
             {
@@ -73,25 +84,21 @@ namespace SlideJam.Game
                 if (dual)
                 {
                     _icon2.sprite = secondIcon;
+                    _icon2.color = tint;
                     _icon2.transform.localScale = _iconScale * _dualScale;
                     _icon2.transform.localPosition = new Vector3(_dualOffset, -_dualOffset, 0f);
                 }
             }
 
-            if (_divider != null)
-            {
-                bool shown = dual && divider != null;
-                _divider.enabled = shown;
-                if (shown) _divider.sprite = divider;
-            }
+            ShowLayer(_divider, dual ? divider : null);
         }
-        
-        private void ShowOutline(Sprite outline)
-        {
-            if (_outline == null) return;
 
-            _outline.enabled = outline != null;
-            if (outline != null) _outline.sprite = outline;
+        private static void ShowLayer(SpriteRenderer layer, Sprite sprite)
+        {
+            if (layer == null) return;
+
+            layer.enabled = sprite != null;
+            if (sprite != null) layer.sprite = sprite;
         }
 
         private void ShowBadge(Sprite badge)

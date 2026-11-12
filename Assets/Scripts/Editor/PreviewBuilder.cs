@@ -21,6 +21,7 @@ namespace SlideJam.EditorTools
             var white = AssetDatabase.LoadAssetAtPath<Sprite>(Sprites + "cell_ring_white_54.png");
             var orange = AssetDatabase.LoadAssetAtPath<Sprite>(Sprites + "cell_ring_orange_54.png");
             var dashed = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Sprites/queue/queue_slot_preview_dashed.png");
+            var red = AssetDatabase.LoadAssetAtPath<Sprite>(Sprites + "cell_ring_red_54.png");
             if (white == null || orange == null || dashed == null)
             {
                 Debug.LogError("Setup Scene: a ring or the dashed box sprite was not found.");
@@ -44,6 +45,7 @@ namespace SlideJam.EditorTools
 
             SetRef(view, "_ringWhite", white);
             SetRef(view, "_ringOrange", orange);
+            SetRef(view, "_ringRed", red);
             SetRef(view, "_boxDashed", dashed);
             SetRef(view, "_label", label);
             SetRef(controller, "_previewView", view);

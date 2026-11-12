@@ -67,3 +67,11 @@ MonoBehaviour:
   - {fileID: 21300000, guid: a69765ff46457d64b87c0b4b3aa701eb, type: 3}
   - {fileID: 21300000, guid: 659c6bc86c67f724792352550b0dd1b9, type: 3}
   - {fileID: 21300000, guid: 546e2b2fdc72838409b2254ce19f4d2b, type: 3}
+  _chainBoth: {fileID: 21300000, guid: 977d8ed2d46c6cb4d868a8d93c00d1e7, type: 3}
+  _chainRow: {fileID: 21300000, guid: 848611534f0368e439c4da5c53e16d37, type: 3}
+  _chainCol: {fileID: 21300000, guid: ce152cbe97d865e498081d2aaa4d9429, type: 3}
+  _chainLayerBadges:
+  - {fileID: 21300000, guid: f104d3b51aa05b94f9e76a929749b9a6, type: 3}
+  - {fileID: 21300000, guid: a402dc5f8d414174182e0b3e7adda8bd, type: 3}
+  _lockMarkHorizontal: {fileID: 21300000, guid: 67f82d300839f5543a081f15a0a24cf3, type: 3}
+  _lockMarkVertical: {fileID: 21300000, guid: a3cc0a3233460d440919abe28a350bbf, type: 3}

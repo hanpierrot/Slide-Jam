@@ -1,4 +1,5 @@
 using System;
+using SlideJam.Engine;
 using UnityEngine;
 
 namespace SlideJam.Game
@@ -48,6 +49,12 @@ namespace SlideJam.Game
         [SerializeField] private Sprite _dualDivider;
         [SerializeField] private Sprite _sealOutline;
         [SerializeField] private Sprite[] _sealBadges = new Sprite[3];
+        [SerializeField] private Sprite _chainBoth;
+        [SerializeField] private Sprite _chainRow;
+        [SerializeField] private Sprite _chainCol;
+        [SerializeField] private Sprite[] _chainLayerBadges = new Sprite[2];
+        [SerializeField] private Sprite _lockMarkHorizontal;
+        [SerializeField] private Sprite _lockMarkVertical;
 
         public int PaletteLength => _palette.Length;
         public BasketLayout Basket => _basketLayout; 
@@ -60,6 +67,21 @@ namespace SlideJam.Game
         public Sprite BadgeSpring => _badgeSpring;
         public Sprite DualDivider => _dualDivider;
         public Sprite SealOutline => _sealOutline;
+        public Sprite LockMarkHorizontal => _lockMarkHorizontal;
+        public Sprite LockMarkVertical => _lockMarkVertical;
+        
+        public Sprite ChainArt(ChainLock chainLock)
+        {
+            if (chainLock == ChainLock.Row) return _chainRow;
+            return chainLock == ChainLock.Col ? _chainCol : _chainBoth;
+        }
+
+        public Sprite ChainLayerBadge(int layers)
+        {
+            if (_chainLayerBadges == null || _chainLayerBadges.Length == 0 || layers < 2) return null;
+
+            return _chainLayerBadges[Mathf.Min(layers - 2, _chainLayerBadges.Length - 1)];
+        }
 
         public Sprite SealBadge(int number)
         {

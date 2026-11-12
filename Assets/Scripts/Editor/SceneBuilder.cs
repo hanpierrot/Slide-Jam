@@ -37,6 +37,19 @@ namespace SlideJam.EditorTools
             PatchBlockPrefab();
 
             SetRef(boardView, "_skin", skin);
+            Transform marks = boardView.transform.Find("LockMarks");
+            if (marks == null)
+            {
+                var created = new GameObject("LockMarks");
+                Undo.RegisterCreatedObjectUndo(created, "Setup Scene");
+                created.transform.SetParent(boardView.transform, false);
+                marks = created.transform;
+            }
+
+            var lockMarks = marks.GetComponent<LockMarkView>();
+            if (lockMarks == null) lockMarks = Undo.AddComponent<LockMarkView>(marks.gameObject);
+            SetRef(lockMarks, "_skin", skin);
+            SetRef(boardView, "_lockMarks", lockMarks);
             SetRef(slotsView, "_skin", skin);
             SetRef(stripView, "_skin", skin);
             SetRef(queueView, "_skin", skin);
@@ -112,6 +125,14 @@ namespace SlideJam.EditorTools
             SerializedProperty sealBadges = so.FindProperty("_sealBadges");
             sealBadges.arraySize = 3;
             for (int n = 0; n < 3; n++) sealBadges.GetArrayElementAtIndex(n).objectReferenceValue = Load("board/seal_badge_" + (n + 1));
+            so.FindProperty("_chainBoth").objectReferenceValue = Load("board/chain_both_48");
+            so.FindProperty("_chainRow").objectReferenceValue = Load("board/chain_row_48");
+            so.FindProperty("_chainCol").objectReferenceValue = Load("board/chain_col_48");
+            so.FindProperty("_lockMarkHorizontal").objectReferenceValue = Load("board/lock_mark_horizontal");
+            so.FindProperty("_lockMarkVertical").objectReferenceValue = Load("board/lock_mark_vertical");
+            SerializedProperty chainBadges = so.FindProperty("_chainLayerBadges");
+            chainBadges.arraySize = 2;
+            for (int n = 0; n < 2; n++) chainBadges.GetArrayElementAtIndex(n).objectReferenceValue = Load("board/chain_layer_badge_" + (n + 2));
 
             SerializedProperty fruits = so.FindProperty("_fruits");
             fruits.arraySize = BasketNames.Length;
@@ -177,6 +198,7 @@ namespace SlideJam.EditorTools
                 
                 SpriteRenderer icon2 = EnsureLayer(root.transform, "Icon2", tile, 1);
                 SpriteRenderer outline = EnsureLayer(root.transform, "SealOutline", tile, 2);
+                SpriteRenderer chain = EnsureLayer(root.transform, "Chain", tile, 4);
                 SpriteRenderer divider = EnsureLayer(root.transform, "Divider", tile, 2); 
                 
                 SetRef(root.GetComponent<BlockView>(), "_icon", icon);
@@ -184,6 +206,7 @@ namespace SlideJam.EditorTools
                 SetRef(root.GetComponent<BlockView>(), "_icon2", icon2);
                 SetRef(root.GetComponent<BlockView>(), "_divider", divider);
                 SetRef(root.GetComponent<BlockView>(), "_outline", outline);
+                SetRef(root.GetComponent<BlockView>(), "_chain", chain);
                 PrefabUtility.SaveAsPrefabAsset(root, BlockPrefabPath);
             }
             finally

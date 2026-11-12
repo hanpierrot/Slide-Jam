@@ -18,6 +18,7 @@ namespace SlideJam.Game
         [SerializeField, HideInInspector] private int _previewCols;
         
         [SerializeField] private ThemeSkin _skin;
+        [SerializeField] private LockMarkView _lockMarks;
 
         private readonly Dictionary<int, BlockView> _views = new Dictionary<int, BlockView>();
 
@@ -96,6 +97,8 @@ namespace SlideJam.Game
                     view.transform.localPosition = CellToLocal(r, c);
                 }
             }
+            
+            if (_lockMarks != null) _lockMarks.Show(state);
         }
         
         public Vector3 ToLocal(Vector3 world)
@@ -146,16 +149,33 @@ namespace SlideJam.Game
         public void ShowLineOffset(BoardState state, Axis axis, int index, float offset)
         {
             int length = axis == Axis.Row ? _cols : _rows;
+            List<int> free = Board.FreePositions(state, axis, index);
+            int count = free.Count;
             for (int i = 0; i < length; i++)
             {
                 Block block = axis == Axis.Row ? state.Grid[index, i] : state.Grid[i, index];
                 if (block.IsEmpty || !_views.TryGetValue(block.Id, out BlockView view)) continue;
 
-                float along = Wrap(i + offset, length);
+                float along = i;
+                if (!block.IsChained && count > 1)
+                {
+                    float t = free.IndexOf(i) + offset;
+                    int step = Mathf.FloorToInt(t);
+                    float unwrapped = Mathf.Lerp(Unwrapped(free, step, length), Unwrapped(free, step + 1, length), t - step);
+                    along = Wrap(unwrapped, length);
+                }
+
                 view.transform.localPosition = axis == Axis.Row
                     ? new Vector3(along - (_cols - 1) / 2f, (_rows - 1) / 2f - index, 0f)
                     : new Vector3(index - (_cols - 1) / 2f, (_rows - 1) / 2f - along, 0f);
             }
+        }
+        
+        private static float Unwrapped(List<int> free, int k, int length)
+        {
+            int count = free.Count;
+            int lap = Mathf.FloorToInt((float)k / count);
+            return free[k - lap * count] + lap * length;
         }
 
         private static float Wrap(float value, int length)
@@ -200,21 +220,28 @@ namespace SlideJam.Game
             return _skin != null ? _skin.Fruit(color).Icon : null;
         }
         
-        private void BindView(BlockView view, Block block)
-        {
-            Sprite second = block.HasDual ? IconOf(block.DualColor) : null;
-            Sprite divider = block.HasDual && _skin != null ? _skin.DualDivider : null;
-            Sprite outline = block.IsSealed && _skin != null ? _skin.SealOutline : null;
-            view.Bind(block.Id, ColorOf(block.Color), IconOf(block.Color), BadgeOf(block), second, divider, outline);
-        }
-
         private Sprite BadgeOf(Block block)
         {
             if (_skin == null) return null;
 
             if (block.IsSealed) return _skin.SealBadge(block.Seal);
+            if (block.IsChained && block.ChainLayers > 1) return _skin.ChainLayerBadge(block.ChainLayers);
             if (block.X2) return _skin.BadgeX2;
             return block.Spring ? _skin.BadgeSpring : null;
+        }
+
+        private void BindView(BlockView view, Block block)
+        {
+            var look = new BlockLook
+            {
+                Icon = IconOf(block.Color),
+                Badge = BadgeOf(block),
+                SecondIcon = block.HasDual ? IconOf(block.DualColor) : null,
+                Divider = block.HasDual && _skin != null ? _skin.DualDivider : null,
+                SealOutline = block.IsSealed && _skin != null ? _skin.SealOutline : null,
+                Chain = block.IsChained && _skin != null ? _skin.ChainArt(block.ChainLock) : null,
+            };
+            view.Bind(block.Id, ColorOf(block.Color), look);
         }
         
 #if UNITY_EDITOR

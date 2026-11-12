@@ -46,5 +46,16 @@ MonoBehaviour:
   - Color: 1
     Cap: 3
   _lockedSlotIndex: -1
-  _specials: []
+  _specials:
+  - Row: 2
+    Col: 2
+    UseColor: 0
+    Color: 0
+    X2: 0
+    Dual: 0
+    DualColor: 0
+    Seal: 2
+    Spring: 0
+    ChainLayers: 3
+    ChainLock: 1
   _number: 1

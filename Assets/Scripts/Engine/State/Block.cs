@@ -48,6 +48,11 @@ namespace SlideJam.Engine
         {
             return new Block(Id, Color, X2, DualColor, seal, Spring, ChainLayers, ChainLock);
         }
+
+        public Block WithChain(int layers)
+        {
+            return new Block(Id, Color, X2, DualColor, Seal, Spring, layers, ChainLock);
+        }
         
         public uint Signature
         {

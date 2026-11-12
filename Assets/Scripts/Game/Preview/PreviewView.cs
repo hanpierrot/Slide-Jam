@@ -13,6 +13,7 @@ namespace SlideJam.Game
 
         [SerializeField] private Sprite _ringWhite;
         [SerializeField] private Sprite _ringOrange;
+        [SerializeField] private Sprite _ringRed;
         [SerializeField] private Color _ringWhiteColor = new Color32(26, 204, 255, 255);
         [SerializeField] private TextMeshPro _label;
         [SerializeField] private Sprite _boxDashed;
@@ -28,6 +29,9 @@ namespace SlideJam.Game
         private SquarePool _boxes;
         private Vector3 _ringScale = Vector3.one;
         private int _ringCount;
+        private SquarePool _flashRings;
+        private float _flashEnd;
+        private int _flashCount;
 
         public void Init(BoardView board, QueueView queue, GameConfig config)
         {
@@ -39,6 +43,8 @@ namespace SlideJam.Game
             _boxes = SquarePool.Obtain(_boxes, transform, "Boxes", BoxSortingOrder);
             _rings.Warm(config.PreviewPoolSize);
             _boxes.Warm(config.QueueUnitBuffer + 8);
+            _flashRings = SquarePool.Obtain(_flashRings, transform, "Flash", RingSortingOrder + 1);
+            _flashRings.Warm(12);
             Clear();
         }
 
@@ -79,11 +85,45 @@ namespace SlideJam.Game
 
         private void Update()
         {
+            UpdateFlash();
             if (_ringCount == 0 || _config == null) return;
 
             float wave = 0.5f + 0.5f * Mathf.Sin(Time.time / _config.PreviewPulseSeconds * Mathf.PI * 2f);
             Vector3 scale = _ringScale * Mathf.Lerp(1f, _config.PreviewPulseScale, wave);
             for (int i = 0; i < _ringCount; i++) _rings.Peek(i).transform.localScale = scale;
+        }
+        
+        public void FlashLine(Axis axis, int index, int rows, int cols)
+        {
+            int length = axis == Axis.Row ? cols : rows;
+            float width = _board.transform.lossyScale.x / transform.lossyScale.x;
+            for (int i = 0; i < length; i++)
+            {
+                int row = axis == Axis.Row ? index : i;
+                int col = axis == Axis.Row ? i : index;
+                Vector3 local = transform.InverseTransformPoint(_board.CellToWorld(row, col));
+                _flashRings.Fit(i, _ringRed, local, width, Color.white);
+            }
+
+            _flashRings.HideFrom(length);
+            _flashCount = length;
+            _flashEnd = Time.time + _config.LockedFlashSeconds;
+        }
+
+        private void UpdateFlash()
+        {
+            if (_flashCount == 0 || _config == null) return;
+
+            float left = _flashEnd - Time.time;
+            if (left <= 0f)
+            {
+                _flashRings.HideFrom(0);
+                _flashCount = 0;
+                return;
+            }
+
+            var color = new Color(1f, 1f, 1f, left / _config.LockedFlashSeconds);
+            for (int i = 0; i < _flashCount; i++) _flashRings.Peek(i).color = color;
         }
 
         private void ShowBoxes(MovePreview preview, BoardState state)

@@ -175,13 +175,13 @@ Colours are numbered 0–4 and the five items of a theme must also differ in **s
 A **line** is one whole row or one whole column. Sliding by `k` cells moves every block `k` places along the line, and the ones that pass the end re-enter at the start.
 
 ```
-k = (notches × step) mod length      step = 2 if the line contains a spring block, else 1
+k = (notches × step) mod m      step = 2 if the line contains a spring block, else 1      m = the free cells of the line (the cells that hold no chain block)
 ```
 
-- `k = 0` is not a move (I3). Otherwise the slide is applied and the move counter goes up by one.
+- `k = 0` is not a move (I3), and neither is any slide of a line with at most one free cell. Otherwise the slide is applied and the move counter goes up by one.
 - **Direction.** A positive `notches` moves a row to the right and a column down; a negative one moves it the other way. `k` uses a floor modulo, so a negative shift equals `length − |k|`.
 - A line is **locked** when it contains a chain block whose lock covers that axis (§5.6). A locked line cannot be slid.
-- A slide moves whatever is in the line, including chain blocks of another axis, sealed blocks and spring blocks.
+- A slide **rotates the blocks of the free cells** of the line, `k` places along the cycle of free cells (the line wraps at its ends). A cell that holds a **chain block never moves and is jumped over**: the blocks next to it pass through it. Sealed and spring blocks are ordinary free cells. Example: the column `[A, chain, B, C]` slid down by one becomes `[C, chain, A, B]`. A rotation leaves no cell empty, so the board stays full (I9).
 
 ### 5.3 Matching
 
@@ -196,7 +196,7 @@ After a valid slide the engine runs these phases in order, and repeats from `cle
 | # | Phase | What happens |
 |---|---|---|
 | 1 | `shift` | The line is slid. The move counter goes up |
-| 2 | `clear` (round *n*) | Find matches. **Chains:** every chained block inside a matched cell or next to one (4 neighbours) loses one layer (§5.6). **Seals:** every sealed block next to a consumed cell loses 1 (§5.6). **Units:** every consumed block gives 1 unit (2 for a ×2 block), placed by the rule below. The consumed cells become empty |
+| 2 | `clear` (round *n*) | Find matches. **Chains:** every chained block inside a matched cell or next to one (4 neighbours) loses one layer (§5.6). **Seals:** every consumed cell lowers the seal of each sealed block next to it by 1, so a sealed block next to two consumed cells loses 2 (§5.6). **Units:** every consumed block gives 1 unit (2 for a ×2 block), placed by the rule below. The consumed cells become empty |
 | 3 | `complete` (0 or more) | Every slot whose `count` has reached its own `cap` is completed (see below), one at a time |
 | 4 | `pull` (0 or 1 after each completion) | Units waiting in the vault (first) and then in the queue move into slots that accept them |
 | 5 | overflow check | If the queue holds more than `qOpen` units: the run is **lost** (`QueueOverflow`). `Ended` is set now; the move stops after the settle (phase 7) |
@@ -239,7 +239,7 @@ Each mechanic is a property of a block or a slot. **Level 3 uses all of them. Le
 
 | Mechanic | Rule | How it ends (I7) | Where |
 |---|---|---|---|
-| **Chain** (`chain: {lock, layers}`) | The block is **immovable by settle** (§5.5) and cannot be consumed. `lock` is `both` (the row **and** the column of the block cannot be slid), `row` (only the row) or `col` (only the column). A `row` or `col` chain block can still be carried along the free axis by a slide | Every **round**, each chained block that is in a matched cell or next to one loses 1 layer; when `layers` reaches 0 the chain is removed and it becomes an ordinary block | `LevelConfig` |
+| **Chain** (`chain: {lock, layers}`) | The block is **fixed to its cell: neither the settle (§5.5) nor a slide (§5.2) ever moves it**, and it cannot be consumed. `lock` is `both` (the row **and** the column of the block cannot be slid), `row` (only the row) or `col` (only the column); a line that is not locked can still be slid, and its other blocks pass through the chained cell | Every **round**, each chained block that is in a matched cell or next to one loses 1 layer; when `layers` reaches 0 the chain is removed and it becomes an ordinary block | `LevelConfig` |
 | **Sealed block** (`seal: n`) | Keeps its colour on screen but counts as no colour: it cannot join a match. It can be slid and it falls normally | Each consumed cell next to it (4 neighbours) lowers `seal` by 1; at 0 it opens and counts as its colour from the next round. The number is drawn on the lock | `LevelConfig` |
 | **×2 block** (`x2`) | Gives 2 units when consumed | — | `LevelConfig` |
 | **Dual block** (`colors: [a, b]`) | Counts as both colours when finding matches; its units can fill either colour (§5.4) | — | `LevelConfig` |
@@ -332,7 +332,7 @@ The engine of Phase 0 and Phase 1 exists in `Assets/Scripts/Engine/` (rows liste
 
 The stream generator is `mulberry32` in `uint` arithmetic with wrap-around (`unchecked`), so one seed gives the same colours on every platform. No `float`, no `System.Random`.
 
-**Built so far (Phases 0 to 3):** every row above except `Hammer`, `SwapInfo`, `SwapTarget`, `Stash`, `LineLocked`, `LineCells` and `StepOf`. `Matcher` handles plain blocks only. `Move` runs the whole resolution of §5.4 for plain blocks, slots, the queue and `qGrow`; the ×2 block and the locked slot are built (Phase 4, steps 4a and 4b); dual, spring, seal and chain are the next steps of Phase 4.
+**Built so far (Phases 0 to 3):** every row above except `Hammer`, `SwapInfo`, `SwapTarget`, `Stash`, `LineLocked` and `LineCells`. `Matcher` handles plain, dual and sealed blocks. `Move` runs the whole resolution of §5.4 for plain blocks, slots, the queue and `qGrow`; ×2, the locked slot, dual, spring and sealed blocks are built (Phase 4, steps 4a to 4e); the chain with the sand flow is the next step (4f, in three parts).
 
 **Test access [built].** The engine assembly declares `InternalsVisibleTo("SlideJam.Tests.EditMode")` (`Assets/Scripts/Engine/AssemblyInfo.cs`), so a test can build a state with chosen slots, queue and `Seq` and call the internal `Resolution` helpers. Nothing in the game assembly uses it. The tests that need a run that cannot end (the Phase 1 sweeps) use `LevelData.Sandbox` instead of the old four-argument constructor; they are not weakened. Tests that need a particular situation use `TestLevels.Make` and craft the grid.
 

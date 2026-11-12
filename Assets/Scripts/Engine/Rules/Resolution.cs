@@ -77,6 +77,50 @@ namespace SlideJam.Engine
             return opened;
         }
         
+        public static List<Cell> Consumable(BoardState state, IReadOnlyList<Cell> matched)
+        {
+            var consumed = new List<Cell>(matched.Count);
+            foreach (Cell cell in matched)
+            {
+                if (!state.Grid[cell.Row, cell.Col].IsChained) consumed.Add(cell);
+            }
+
+            return consumed;
+        }
+        
+        public static List<int> BreakChains(BoardState state, IReadOnlyList<Cell> matched)
+        {
+            int rows = state.Level.Rows;
+            int cols = state.Level.Cols;
+            var touched = new bool[rows, cols];
+            foreach (Cell cell in matched)
+            {
+                touched[cell.Row, cell.Col] = true;
+                for (int d = 0; d < 4; d++)
+                {
+                    int row = cell.Row + NeighbourRow[d];
+                    int col = cell.Col + NeighbourCol[d];
+                    if (row >= 0 && row < rows && col >= 0 && col < cols) touched[row, col] = true;
+                }
+            }
+
+            var freed = new List<int>();
+            for (int r = 0; r < rows; r++)
+            {
+                for (int c = 0; c < cols; c++)
+                {
+                    Block block = state.Grid[r, c];
+                    if (!touched[r, c] || !block.IsChained) continue;
+
+                    Block lowered = block.WithChain(block.ChainLayers - 1);
+                    state.Grid[r, c] = lowered;
+                    if (!lowered.IsChained) freed.Add(block.Id);
+                }
+            }
+
+            return freed;
+        }
+        
         public static void CompleteAndPull(BoardState state, List<Phase> phases)
         {
             while (true)

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace SlideJam.Engine
 {
     public static class Board
@@ -29,16 +31,50 @@ namespace SlideJam.Engine
             return 1;
         }
 
+        public static List<int> FreePositions(BoardState state, Axis axis, int index)
+        {
+            int length = LineLength(state.Level, axis);
+            var free = new List<int>(length);
+            for (int i = 0; i < length; i++)
+            {
+                if (!Get(state.Grid, axis, index, i).IsChained) free.Add(i);
+            }
+
+            return free;
+        }
+        
+        public static bool LineLocked(BoardState state, Axis axis, int index)
+        {
+            int length = LineLength(state.Level, axis);
+            for (int i = 0; i < length; i++)
+            {
+                Block block = Get(state.Grid, axis, index, i);
+                if (!block.IsChained) continue;
+                if (block.ChainLock == ChainLock.Both) return true;
+                if (axis == Axis.Row ? block.ChainLock == ChainLock.Row : block.ChainLock == ChainLock.Col) return true;
+            }
+
+            return false;
+        }
 
         public static void Shift(Block[,] grid, Axis axis, int index, int k)
         {
             int length = axis == Axis.Row ? grid.GetLength(1) : grid.GetLength(0);
-            k = FloorMod(k, length);
+            var free = new List<int>(length);
+            for (int i = 0; i < length; i++)
+            {
+                if (!Get(grid, axis, index, i).IsChained) free.Add(i);
+            }
+
+            int count = free.Count;
+            if (count <= 1) return;
+
+            k = FloorMod(k, count);
             if (k == 0) return;
 
-            var line = new Block[length];
-            for (int i = 0; i < length; i++) line[i] = Get(grid, axis, index, i);
-            for (int i = 0; i < length; i++) Set(grid, axis, index, (i + k) % length, line[i]);
+            var blocks = new Block[count];
+            for (int j = 0; j < count; j++) blocks[j] = Get(grid, axis, index, free[j]);
+            for (int j = 0; j < count; j++) Set(grid, axis, index, free[(j + k) % count], blocks[j]);
         }
 
         private static Block Get(Block[,] grid, Axis axis, int index, int pos)

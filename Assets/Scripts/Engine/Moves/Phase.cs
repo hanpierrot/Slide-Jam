@@ -15,6 +15,7 @@ namespace SlideJam.Engine
         public int Slot { get; private set; }
         public IReadOnlyList<int> Unlocked { get; private set; } = Array.Empty<int>();
         public IReadOnlyList<int> Unsealed { get; private set; } = Array.Empty<int>();
+        public IReadOnlyList<int> Unchained { get; private set; } = Array.Empty<int>();
         public EndReason? Reason { get; private set; }
 
         private Phase(PhaseKind kind, BoardState snap)
@@ -29,7 +30,7 @@ namespace SlideJam.Engine
         }
 
         internal static Phase Clear(BoardState snap, int round, IReadOnlyList<Cell> matchedCells,
-            IReadOnlyList<Flight> flights, int vanished, IReadOnlyList<int> unsealed)
+            IReadOnlyList<Flight> flights, int vanished, IReadOnlyList<int> unsealed, IReadOnlyList<int> unchained)
         {
             return new Phase(PhaseKind.Clear, snap)
             {
@@ -38,6 +39,7 @@ namespace SlideJam.Engine
                 Flights = flights,
                 Vanished = vanished,
                 Unsealed = unsealed,
+                Unchained = unchained,
             };
         }
 

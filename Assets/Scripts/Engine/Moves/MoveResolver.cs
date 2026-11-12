@@ -14,8 +14,12 @@ namespace SlideJam.Engine
             if (index < 0 || index >= lines) throw new ArgumentOutOfRangeException(nameof(index));
             if (state.Ended.HasValue) return MoveResult.Rejected(state);
 
-            int step = Board.StepOf(state, axis, index); 
-            int k = Board.ShiftAmount(notches, step, Board.LineLength(level, axis));
+            if (Board.LineLocked(state, axis, index)) return MoveResult.Rejected(state);
+           
+            int step = Board.StepOf(state, axis, index);
+            int free = Board.FreePositions(state, axis, index).Count; 
+            if (free <= 1) return MoveResult.Rejected(state);
+            int k = Board.ShiftAmount(notches, step, free);
             if (k == 0) return MoveResult.Rejected(state);
 
             BoardState next = state.Clone();
@@ -31,9 +35,11 @@ namespace SlideJam.Engine
                 if (matched.Count == 0) break;
                 if (round > MaxRounds) throw new InvalidOperationException("Resolution did not finish.");
 
-                List<Flight> flights = Resolution.RouteUnits(next, matched, round, out int vanished);
-                List<int> unsealed = Resolution.OpenSeals(next, matched);
-                phases.Add(Phase.Clear(next.Clone(), round, matched, flights, vanished, unsealed));
+                List<Cell> consumed = Resolution.Consumable(next, matched);
+                List<Flight> flights = Resolution.RouteUnits(next, consumed, round, out int vanished);
+                List<int> unsealed = Resolution.OpenSeals(next, consumed);
+                List<int> unchained = Resolution.BreakChains(next, matched);
+                phases.Add(Phase.Clear(next.Clone(), round, consumed, flights, vanished, unsealed, unchained));
 
                 Resolution.CompleteAndPull(next, phases);
                 Resolution.CheckEnd(next);
