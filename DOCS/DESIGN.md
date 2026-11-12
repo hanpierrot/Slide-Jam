@@ -104,7 +104,7 @@ The screen is one portrait layout on a reference width of **360 logical units**,
 |---|---|
 | **Target slots** ×3 | The slots currently asking for blocks. Each shows its colour, a count `n/cap` and `cap` pips (3 to 5, set per target). Filling the last pip completes it (§5.4) |
 | **Next strip** | The targets still to come, so the player can plan ahead. A target that already holds banked units (after a swap, §5.9) shows the number |
-| **Queue** | A row of `queueMax` chairs (5 or 6). A level with `qGrow` opens only the first `qOpen` (3 at the start); the rest show a padlock. Shows `n/qOpen`. A unit past the last chair (only the move that loses has them) stands on a small plank under the queue, the **overflow row**, drawn smaller (`overflowUnitScale`); the plank fades in only while such a unit exists |
+| **Queue** | A row of `queueMax` chairs (5 or 6). A level with `qGrow` opens only the first `qOpen` (3 at the start); the rest show a padlock. Shows `n/qOpen`. A unit past the last chair (only the move that loses has them) stands in the **vault bin** at the right end of the row, in two rows of five, drawn small (the bin will also hold the vault, §5.9) |
 | **Vault** | Next to the queue. Shows the units stored by the Stash booster (§5.9) in **two separate rows of five**, filled left to right and then top to bottom; the label carries the full count, and a unit past the tenth is counted but not drawn |
 | **Next-spawn dots** | Two small blocks above each column: the next two colours that column will spawn (I5) |
 | **Grid** | 6×6 (Levels 1 and 2) or 7×7 (Level 3), per `LevelConfig`. Edge markers (red bars) show which rows and columns are locked |
@@ -126,7 +126,7 @@ Drag only. Press on a cell of the grid, move, release.
 - Input is ignored while a resolution is playing, while a panel is open and after the run has ended.
 - **Built (Phase 1):** `DragInput` reads the classic Input Manager (a touch works through the simulated mouse), ignores a press over uGUI and while the view is busy, locks the axis after 8 logical units and rounds to the nearest notch on release. A refused move (zero shift) snaps the line back in 140 ms. Not built yet: the locked-line flash and the spring step (Phase 4).
 
-### 4.2 Drag preview [BUILT in the prototypes]
+### 4.2 Drag preview [BUILT]
 
 While dragging, the game runs the real move on a copy of the state (`preview`) and shows its first matches:
 
@@ -135,6 +135,8 @@ While dragging, the game runs the real move on a copy of the state (`preview`) a
 - **Red text** ("will overflow → lose") when the whole resolution would end the run by overflow.
 
 The number in the header is the **net change of the queue after the whole chain**, not just the first round, so a move that overflows and is then rescued by a completion is not reported as a loss. The preview never shows a cascade's cells, only the first round's, so the drag shows "what I am about to cause", and the label shows "what that will cost in total" (I5).
+
+**Built (Phase 3).** The outline is white (tinted in the view so that it is easy to see) or orange; dashed boxes (`queue_slot_preview_dashed`) mark the chairs the move will take, and a short label sits in the vault box: `+N` in orange, `Lose!` in red. A queue consequence past the last chair has no box, the label says it. The preview is asked for when the notch of the drag changes, and when the drag is released it is compared with the first clear round of the move that is played (I5).
 
 ---
 
@@ -316,7 +318,7 @@ The engine of Phase 0 and Phase 1 exists in `Assets/Scripts/Engine/` (rows liste
 | `BoardState.New(LevelData)` | A new level state: grid, stream pointers, counters, the first `ActiveSlots` slots taken from `Seq` (`Pre` of zeros), an empty queue and vault, `QOpen = QOpenStart`, `Ended = null`. `Seq`, `Pre` and `Vault` are in the state (and in `Clone` and `Hash`) so they do not change again with the boosters of Phase 5; the vault stays empty until then |
 | `MoveResolver.Move(state, axis, index, notches) → MoveResult` | Apply a slide to a **copy**; returns `{ Ok, State, Phases }`. `Ok` is false for a zero shift, a locked line or a finished run; a refused move returns the input state unchanged and no phases |
 | `MoveResolver.Revive(state) → MoveResult` | **[BUILT]** Revive after a loss (§5.7): `Ok` is false unless `Ended == QueueOverflow`; otherwise a new state with an empty queue, `Ended = null` and a shuffled grid (§5.7.1), and one `Revive` phase |
-| `MoveResolver.Preview(state, axis, index, notches) → Preview?` | The drag preview (§4.2): `{ Cells, ToQueue, Lose }`, or `null` when nothing matches. It calls `Move` on a copy |
+| `MoveResolver.Preview(state, axis, index, notches) → MovePreview?` | **[BUILT]** The drag preview (§4.2): `{ Cells, ToQueue, Lose }`, or `null` when the move is refused or round 1 matches nothing. It calls `Move` on a copy |
 | `Board.Shift(grid, axis, index, k)` · `Board.ShiftAmount(notches, step, length)` · `Board.LineLength(level, axis)` · `Board.FloorMod` | The slide on a raw grid · `k = floorMod(notches × step, length)` · the length of a line |
 | `Board.LineLocked(state, axis, index)` | Whether a row or column can be slid (§5.2) |
 | `Board.LineCells(axis, index)` · `Board.StepOf(state, axis, index)` | The cells of a line · the cells moved per notch (1 or 2) |
@@ -330,7 +332,7 @@ The engine of Phase 0 and Phase 1 exists in `Assets/Scripts/Engine/` (rows liste
 
 The stream generator is `mulberry32` in `uint` arithmetic with wrap-around (`unchecked`), so one seed gives the same colours on every platform. No `float`, no `System.Random`.
 
-**Built so far (Phases 0 to 2):** every row above except `Preview`, `Hammer`, `SwapInfo`, `SwapTarget`, `Stash`, `LineLocked`, `LineCells` and `StepOf`. `Matcher` handles plain blocks only. `Move` runs the whole resolution of §5.4 for plain blocks, slots, the queue and `qGrow`; the locked slot, dual, ×2, spring, seal and chain are Phase 4.
+**Built so far (Phases 0 to 3):** every row above except `Hammer`, `SwapInfo`, `SwapTarget`, `Stash`, `LineLocked`, `LineCells` and `StepOf`. `Matcher` handles plain blocks only. `Move` runs the whole resolution of §5.4 for plain blocks, slots, the queue and `qGrow`; the locked slot, dual, ×2, spring, seal and chain are Phase 4.
 
 **Test access [built].** The engine assembly declares `InternalsVisibleTo("SlideJam.Tests.EditMode")` (`Assets/Scripts/Engine/AssemblyInfo.cs`), so a test can build a state with chosen slots, queue and `Seq` and call the internal `Resolution` helpers. Nothing in the game assembly uses it. The tests that need a run that cannot end (the Phase 1 sweeps) use `LevelData.Sandbox` instead of the old four-argument constructor; they are not weakened. Tests that need a particular situation use `TestLevels.Make` and craft the grid.
 
@@ -393,7 +395,8 @@ Assets/Tests/PlayMode/   [planned] a real drag against the engine's prediction
 - **Configuration [BUILT].** `GameManager` (a scene singleton) holds `GameConfig`. `GameController` reads it through a serialized reference, so it also works in Edit Mode, passes it to `PhasePlayer` and `DragInput`, and passes the capacity values to the views' `Build`; the views never call the singleton. `GameConfig` holds the rule limits, the animation timings, the input values and the capacity buffers; `ThemeSkin` holds the palette and the basket layout ratios; the layout metrics stay on the scene components.
 - **Targets and queue during a flight [BUILT].** While units fly, the slots and the queue are drawn from the state *before* the phase, and each change appears when its unit lands: a pip fills, or a queue place is drawn, one unit at a time (the player keeps its own copy of the state and applies the flights to it), so a pip fills when its block lands, not when it leaves. A pulled unit leaves its queue place when its flight starts. A `Vanish` flight shrinks in place; flights from or to the vault have no view until Phase 5. After the flights the slots and the queue are redrawn from the phase's own state, so a flight can never leave them different from the engine's state.
 - **Complete and Pull [BUILT].** `Complete`: the full slot pops (scale 1, `slotPopScale`, 1), is redrawn with its next target and enters (0 to 1); the strip and the "targets left" text update at that moment. `Pull`: queue units fly into the slots that now accept them, then the queue closes up.
-- **Overflow row [BUILT].** Queue indices from `queueMax` on are drawn on the `Overflow` anchor, in fixed places (a unit never moves when another arrives, I5), scaled by `overflowUnitScale`; the row is at most `queueUnitBuffer` units wide. Only the move that loses has such units; Revive empties the queue and the plank fades out. The flights use the same position function (`QueueView.UnitWorld`), so they land on the plank.
+- **Overflow in the vault bin [BUILT].** Queue indices from `queueMax` on are drawn in the vault bin at the right end of the queue row, in fixed places (two rows of five, filled left to right then top to bottom; a unit never moves when another arrives, I5; a unit past the tenth stacks on the last place). Only the move that loses has such units; Revive empties the queue. The flights use the same position function (`QueueView.UnitWorld`), so they land in the bin.
+- **Next-spawn dots [BUILT].** `NextSpawnView` draws two fruits on a stalk above every column: the next spawn (larger) below, the one after it (smaller, fainter) above, `ColumnStream.At(seed, column, Ptr[column])` and `Ptr + 1`, the call `SandSettler` makes for the real spawn. They turn over at the start of the `Fall` phase, when the new blocks start to fall in, and `Matches` checks them after a move.
 - **Input [BUILT].** One pointer path for mouse and touch using the classic Input Manager (`Input.GetMouseButton*` / `Input.touches`); the Input System package is not installed. Input is ignored while a phase list is playing (I8).
 - **Preview cost.** The preview runs a full resolution on a copy at every pointer move. It is small on 7×7. Cache it per notch count if it shows up in a profile.
 - **Tests [PROPOSED].** Edit Mode (Unity Test Framework): a rule test per mechanic, the invariants (I4 same seed and moves give the same `Hash()`, I5 preview equals result, I9 no hole after any move, the one that ends the run included), a direct sand-flow test (a chain block stays put and the cells under it are refilled), a cap test (targets of 3, 4 and 5 units complete at exactly their own `cap`), a booster test (after any booster use: no hole, the multiset of `Seq` unchanged, `(Seq.Length − SeqI) + open slots = total − Done`, no stream pointer moved, no unit added to the queue, an earlier held state is unchanged and the use is not refunded). Play Mode: a real drag on the board compared with the engine's prediction for the same move, including a spring line.
@@ -492,6 +495,6 @@ The theme changes **display strings, art and layout details only**. Code, tests,
 
 - **Baskets** are seen from above: 106×84 units, three visible inner walls (top, left, right) with depth shading, a label pill on the front rim (fruit icon and `n/cap`), a lining tinted by the fruit with a coloured inner edge, dashed rings and a faint fruit for empty places, vines and a padlock when locked, a gold outline when full.
 - **Blocks** sit on cream tiles. A sealed block is the faded fruit with a dashed outline and a number badge; a chain is green vines across the block (crossing for `both`, along the row or column for `row` and `col`) with a layer badge above 1; ×2 is two small fruits and a badge; dual is split diagonally; a spring has a coil badge.
-- **Queue** is a wooden tray; a locked chair is tied with a vine knot. Units past the last chair stand on a small plank under it (the shelf plank sprite, reused). The **vault** is a wooden bin (two rows of five, §4). The next-spawn dots hang on a branch above the grid, the nearer one larger.
+- **Queue** is a wooden tray; a locked chair is tied with a vine knot. Units past the last chair stand in the **vault** bin at the right end of the row (a wooden bin, two rows of five, §4). The next-spawn dots hang on a branch above the grid, two fruits on a stalk, the nearer one larger and the further one smaller and fainter.
 - **One background for all levels**, with light decoration only (drifting clouds, swaying leaves). Rounded fonts (Nunito for text, Fredoka for headings).
 - **No sound** yet.
